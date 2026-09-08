@@ -1,0 +1,45 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.input {
+  flex: 1;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.button {
+  min-width: 7.5rem;
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: var(--color-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.button:disabled,
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

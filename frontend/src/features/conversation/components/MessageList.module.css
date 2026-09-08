@@ -1,0 +1,43 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user,
+.assistant {
+  max-width: min(42rem, 100%);
+  padding: 1rem 1.15rem;
+  border-radius: 1.1rem;
+}
+
+.user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.assistant {
+  align-self: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.role {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.body {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
