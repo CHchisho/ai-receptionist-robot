@@ -1,3 +1,4 @@
+import { FeedbackForm } from "@/features/feedback/components/FeedbackForm";
 import { Link } from "react-router-dom";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import styles from "./ReceptionPage.module.css";
@@ -15,6 +16,7 @@ export function ReceptionPage() {
         </Link>
       </header>
       <ChatPanel />
+      <FeedbackForm />
     </main>
   );
 }
