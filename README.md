@@ -61,7 +61,7 @@ frontend/src/
   pages/           reception (/) and admin (/admin)
   features/
     conversation/  chat UI and ask API
-    voice/         microphone / STT / TTS stubs
+    voice/         microphone capture, STT upload client, TTS playback
   shared/          HTTP client, config, types
 ```
 
@@ -71,3 +71,10 @@ frontend/src/
 → `ConversationService.ask`
 → mock RAG (empty chunks) → mock LLM (`"AI answer"`)
 → JSON `{ answer, sources }` → chat UI
+
+**Voice input workflow:**
+
+`RecordButton` → `useMicrophone` captures audio via `MediaRecorder`
+→ `POST /api/v1/conversation/transcribe` (multipart file upload)
+→ `MockSttProvider.transcribe` → `{ text }`
+→ recognised text is passed into the same `ask()` flow as typed input
