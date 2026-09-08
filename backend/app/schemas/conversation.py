@@ -22,3 +22,7 @@ class AskResponse(BaseModel):
     answer: str
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+
+
+class TranscribeResponse(BaseModel):
+    text: str
