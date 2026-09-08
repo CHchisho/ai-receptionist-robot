@@ -69,5 +69,5 @@ frontend/src/
 
 `ReceptionPage` → `POST /api/v1/conversation/ask` `{ text }`
 → `ConversationService.ask`
-→ mock RAG (empty chunks) → mock LLM (`"AI answer"`)
-→ JSON `{ answer, sources }` → chat UI
+→ mock RAG (empty chunks) → mock LLM (`"AI answer"`) → mock TTS synthesizes audio for the answer
+→ JSON `{ answer, audio_base64, sources }` → chat UI, which auto-plays `audio_base64` via `ttsClient.playAudio` so the visitor hears the reply immediately
