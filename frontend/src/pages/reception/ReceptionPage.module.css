@@ -31,3 +31,34 @@
   color: var(--color-muted);
   font-size: 0.9rem;
 }
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.feedbackButton {
+  min-height: 56px;
+  padding: 0 28px;
+  border: 2px solid #1d4fa3;
+  border-radius: 14px;
+  background: white;
+  color: #1d4fa3;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feedbackButton:hover {
+  background: #eef4ff;
+}
+
+.adminLink {
+  min-height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  text-decoration: none;
+}
