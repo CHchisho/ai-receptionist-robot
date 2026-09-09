@@ -22,3 +22,5 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+backend/app/data/feedback.json

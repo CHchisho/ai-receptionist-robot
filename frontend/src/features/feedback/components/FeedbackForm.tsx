@@ -6,13 +6,31 @@ export function FeedbackForm() {
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = () => {
-    console.log("Rating:", rating);
-    console.log("Comment:", comment);
+  const handleSubmit = async () => {
+    if (rating === null) return;
 
-    setSubmitted(true);
-    setRating(null);
-    setComment("");
+    try {
+      const response = await fetch("/api/v1/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rating,
+          comment,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit feedback");
+      }
+
+      setSubmitted(true);
+      setRating(null);
+      setComment("");
+    } catch (error) {
+      console.error("Feedback submission failed:", error);
+    }
   };
 
   const ratings = [
