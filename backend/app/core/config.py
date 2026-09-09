@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     tts_provider: str = "mock"
     rag_provider: str = "mock"
 
+    piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

@@ -45,7 +45,7 @@ backend/app/
     llm/           base + mock now, Ollama later
     rag/           base + mock now, Qdrant later
     stt/           base + mock now, faster-whisper later
-    tts/           base + mock now, Piper later
+    tts/           base + mock + Piper (TTS_PROVIDER=piper)
     navigation/    structured indoor directions (later)
 ```
 
