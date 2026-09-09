@@ -6,7 +6,6 @@ from app.services.llm.mock import MockLlmProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
 from app.services.stt.mock import MockSttProvider
-from app.services.stt.whisper import WhisperSttProvider
 
 
 def get_conversation_service() -> ConversationService:
@@ -32,6 +31,8 @@ def get_stt_provider() -> SttProvider:
     Cached so the whisper model is loaded once per process, not per request.
     """
     if settings.stt_provider == "whisper":
+        from app.services.stt.whisper import WhisperSttProvider  # imported lazily so mock mode needs no model deps
+
         return WhisperSttProvider(
             model_size=settings.whisper_model_size,
             device=settings.whisper_device,
