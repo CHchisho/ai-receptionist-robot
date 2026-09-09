@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     tts_provider: str = "mock"
     rag_provider: str = "mock"
 
+    whisper_model_size: str = "base"
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

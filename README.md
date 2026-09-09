@@ -44,7 +44,7 @@ backend/app/
   services/        conversation orchestration
     llm/           base + mock now, Ollama later
     rag/           base + mock now, Qdrant later
-    stt/           base + mock now, faster-whisper later
+    stt/           base + mock + faster-whisper (STT_PROVIDER=whisper)
     tts/           base + mock now, Piper later
     navigation/    structured indoor directions (later)
 ```
