@@ -19,6 +19,20 @@ uvicorn app.main:app --reload --port 8000
 
 API docs: http://localhost:8000/api/docs
 
+#### TTS_PROVIDER=piper
+
+`TTS_PROVIDER=mock` (default) needs nothing extra. To use real speech synthesis:
+
+1. Download a voice (both files are required, matching names):
+   ```
+   python -m piper.download_voices en_US-lessac-medium
+   ```
+   This saves `en_US-lessac-medium.onnx` (model) and `en_US-lessac-medium.onnx.json`
+   (config) into the current directory — see the [voice list](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
+   for other languages/voices.
+2. Set `TTS_PROVIDER=piper` and `PIPER_MODEL_PATH=/path/to/en_US-lessac-medium.onnx`
+   in `.env` (the `.onnx.json` file must sit next to it with the same base name).
+
 ### Frontend
 
 ```powershell

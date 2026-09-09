@@ -3,8 +3,6 @@
 import io
 import wave
 
-from piper import PiperVoice
-
 
 class PiperTtsProvider:
     """Synthesizes speech locally using Piper.
@@ -13,6 +11,8 @@ class PiperTtsProvider:
     """
 
     def __init__(self, model_path: str) -> None:
+        from piper import PiperVoice  # imported lazily so mock mode needs no model deps
+
         self._voice = PiperVoice.load(model_path)
 
     def synthesize(self, text: str) -> bytes:

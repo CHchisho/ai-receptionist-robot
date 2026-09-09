@@ -15,7 +15,7 @@ def test_synthesize_returns_wav_bytes() -> None:
     fake_voice = MagicMock()
     fake_voice.synthesize_wav.side_effect = _fake_synthesize_wav
 
-    with patch("app.services.tts.piper.PiperVoice.load", return_value=fake_voice) as load:
+    with patch("piper.PiperVoice.load", return_value=fake_voice) as load:
         provider = PiperTtsProvider(model_path="/models/voice.onnx")
         load.assert_called_once_with("/models/voice.onnx")
 
