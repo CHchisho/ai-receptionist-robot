@@ -7,6 +7,8 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.9",
+    "faster-whisper>=1.0.0",
     "piper-tts>=1.8.0",
 ]
 

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     tts_provider: str = "mock"
     rag_provider: str = "mock"
 
+    whisper_model_size: str = "base"
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
+
     piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
 
     @property

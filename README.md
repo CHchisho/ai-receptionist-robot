@@ -19,6 +19,18 @@ uvicorn app.main:app --reload --port 8000
 
 API docs: http://localhost:8000/api/docs
 
+#### STT_PROVIDER=whisper (faster-whisper)
+
+`STT_PROVIDER=mock` (default) needs nothing extra. To use real transcription:
+
+1. Install `ffmpeg` and make sure it's on `PATH` (used to decode uploaded audio):
+   - Windows: `choco install ffmpeg` (or download from ffmpeg.org and add `bin/` to `PATH`)
+   - macOS: `brew install ffmpeg`
+   - Linux: `apt install ffmpeg`
+2. Set `STT_PROVIDER=whisper` in `.env`. The `faster-whisper` model (size from
+   `WHISPER_MODEL_SIZE`, default `base`) downloads automatically from Hugging Face
+   the first time it's used and is cached locally — no manual model file needed.
+
 #### TTS_PROVIDER=piper
 
 `TTS_PROVIDER=mock` (default) needs nothing extra. To use real speech synthesis:
@@ -58,7 +70,7 @@ backend/app/
   services/        conversation orchestration
     llm/           base + mock now, Ollama later
     rag/           base + mock now, Qdrant later
-    stt/           base + mock now, faster-whisper later
+    stt/           base + mock + faster-whisper (STT_PROVIDER=whisper)
     tts/           base + mock + Piper (TTS_PROVIDER=piper)
     navigation/    structured indoor directions (later)
 ```
@@ -75,7 +87,7 @@ frontend/src/
   pages/           reception (/) and admin (/admin)
   features/
     conversation/  chat UI and ask API
-    voice/         microphone / STT / TTS stubs
+    voice/         microphone capture, STT upload client, TTS playback
   shared/          HTTP client, config, types
 ```
 
@@ -85,3 +97,10 @@ frontend/src/
 → `ConversationService.ask`
 → mock RAG (empty chunks) → mock LLM (`"AI answer"`) → mock TTS synthesizes audio for the answer
 → JSON `{ answer, audio_base64, sources }` → chat UI, which auto-plays `audio_base64` via `ttsClient.playAudio` so the visitor hears the reply immediately
+
+**Voice input workflow:**
+
+`RecordButton` → `useMicrophone` captures audio via `MediaRecorder`
+→ `POST /api/v1/conversation/transcribe` (multipart file upload)
+→ `MockSttProvider.transcribe` → `{ text }`
+→ recognised text is passed into the same `ask()` flow as typed input

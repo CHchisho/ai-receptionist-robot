@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.services.conversation import ConversationService
 from app.services.llm.mock import MockLlmProvider
 from app.services.rag.mock import MockRagProvider
+from app.services.stt.base import SttProvider
+from app.services.stt.mock import MockSttProvider
 from app.services.tts.base import TtsProvider
 from app.services.tts.mock import MockTtsProvider
 
@@ -39,3 +41,23 @@ def get_conversation_service() -> ConversationService:
         rag=MockRagProvider(),
         tts=get_tts_provider(),
     )
+
+
+@lru_cache
+def get_stt_provider() -> SttProvider:
+    """Build the STT provider used to transcribe recorded audio.
+
+    Cached so the whisper model is loaded once per process, not per request.
+    """
+    if settings.stt_provider == "whisper":
+        from app.services.stt.whisper import WhisperSttProvider  # imported lazily so mock mode needs no model deps
+
+        return WhisperSttProvider(
+            model_size=settings.whisper_model_size,
+            device=settings.whisper_device,
+            compute_type=settings.whisper_compute_type,
+        )
+    if settings.stt_provider != "mock":
+        raise RuntimeError(f"STT provider '{settings.stt_provider}' is not wired yet")
+
+    return MockSttProvider()

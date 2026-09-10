@@ -23,3 +23,7 @@ class AskResponse(BaseModel):
     audio_base64: str | None = None
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+
+
+class TranscribeResponse(BaseModel):
+    text: str
