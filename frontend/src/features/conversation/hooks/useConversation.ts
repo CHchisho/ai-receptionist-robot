@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
 import type { ChatMessage } from "@/features/conversation/types";
+import { playAudio } from "@/features/voice/services/ttsClient";
 import type { UiState } from "@/shared/types/ui";
 
 const WELCOME_MESSAGE: ChatMessage = {
@@ -39,6 +40,16 @@ export function useConversation() {
         ...current,
         { id: createId(), role: "assistant", content: response.answer },
       ]);
+
+      if (response.audio_base64) {
+        setStatus("speaking");
+        try {
+          await playAudio(response.audio_base64);
+        } catch {
+          // Playback issues shouldn't block the conversation from continuing.
+        }
+      }
+
       setStatus("idle");
     } catch {
       setStatus("error");

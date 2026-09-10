@@ -14,6 +14,7 @@ export function ChatPanel() {
       </div>
       {error ? <p className={styles.error}>{error}</p> : null}
       {busy ? <p className={styles.status}>Thinking…</p> : null}
+      {status === "speaking" ? <p className={styles.status}>Speaking…</p> : null}
       <AskForm disabled={busy} onAsk={ask} />
     </section>
   );
