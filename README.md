@@ -31,6 +31,20 @@ API docs: http://localhost:8000/api/docs
    `WHISPER_MODEL_SIZE`, default `base`) downloads automatically from Hugging Face
    the first time it's used and is cached locally — no manual model file needed.
 
+#### TTS_PROVIDER=piper
+
+`TTS_PROVIDER=mock` (default) needs nothing extra. To use real speech synthesis:
+
+1. Download a voice (both files are required, matching names):
+   ```
+   python -m piper.download_voices en_US-lessac-medium
+   ```
+   This saves `en_US-lessac-medium.onnx` (model) and `en_US-lessac-medium.onnx.json`
+   (config) into the current directory — see the [voice list](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
+   for other languages/voices.
+2. Set `TTS_PROVIDER=piper` and `PIPER_MODEL_PATH=/path/to/en_US-lessac-medium.onnx`
+   in `.env` (the `.onnx.json` file must sit next to it with the same base name).
+
 ### Frontend
 
 ```powershell
@@ -57,7 +71,7 @@ backend/app/
     llm/           base + mock now, Ollama later
     rag/           base + mock now, Qdrant later
     stt/           base + mock + faster-whisper (STT_PROVIDER=whisper)
-    tts/           base + mock now, Piper later
+    tts/           base + mock + Piper (TTS_PROVIDER=piper)
     navigation/    structured indoor directions (later)
 ```
 
@@ -81,8 +95,8 @@ frontend/src/
 
 `ReceptionPage` → `POST /api/v1/conversation/ask` `{ text }`
 → `ConversationService.ask`
-→ mock RAG (empty chunks) → mock LLM (`"AI answer"`)
-→ JSON `{ answer, sources }` → chat UI
+→ mock RAG (empty chunks) → mock LLM (`"AI answer"`) → mock TTS synthesizes audio for the answer
+→ JSON `{ answer, audio_base64, sources }` → chat UI, which auto-plays `audio_base64` via `ttsClient.playAudio` so the visitor hears the reply immediately
 
 **Voice input workflow:**
 

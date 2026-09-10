@@ -6,6 +6,24 @@ from app.services.llm.mock import MockLlmProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
 from app.services.stt.mock import MockSttProvider
+from app.services.tts.base import TtsProvider
+from app.services.tts.mock import MockTtsProvider
+
+
+@lru_cache
+def get_tts_provider() -> TtsProvider:
+    """Build the TTS provider used to synthesize speech.
+
+    Cached so the Piper voice model is loaded once per process, not per request.
+    """
+    if settings.tts_provider == "piper":
+        from app.services.tts.piper import PiperTtsProvider  # imported lazily so mock mode needs no model deps
+
+        return PiperTtsProvider(model_path=settings.piper_model_path)
+    if settings.tts_provider != "mock":
+        raise RuntimeError(f"TTS provider '{settings.tts_provider}' is not wired yet")
+
+    return MockTtsProvider()
 
 
 def get_conversation_service() -> ConversationService:
@@ -21,6 +39,7 @@ def get_conversation_service() -> ConversationService:
     return ConversationService(
         llm=MockLlmProvider(),
         rag=MockRagProvider(),
+        tts=get_tts_provider(),
     )
 
 
