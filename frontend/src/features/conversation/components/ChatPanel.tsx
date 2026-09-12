@@ -4,6 +4,7 @@ import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { RecordButton } from "@/features/voice/components/RecordButton";
 import styles from "./ChatPanel.module.css";
 
+
 export function ChatPanel() {
   const { messages, status, error, ask } = useConversation();
   const busy = status === "processing";
