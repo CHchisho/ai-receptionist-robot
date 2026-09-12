@@ -1,0 +1,77 @@
+.feedback {
+  width: min(900px, 100%);
+  max-height: calc(100dvh - 180px);
+  margin: 20px auto;
+  padding: clamp(20px, 4vw, 40px);
+  box-sizing: border-box;
+  overflow: hidden;
+  background: white;
+  border-radius: 24px;
+}
+
+.title {
+  margin-bottom: clamp(18px, 3vh, 32px);
+  text-align: center;
+  font-size: clamp(28px, 4vw, 36px);
+}
+
+.ratings {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(10px, 2vw, 20px);
+  margin-bottom: clamp(20px, 3vh, 36px);
+}
+
+.ratingButton {
+  width: clamp(70px, 9vw, 96px);
+  height: clamp(70px, 9vw, 96px);
+  border: 2px solid #d0d7e2;
+  border-radius: 20px;
+  background: white;
+  font-size: clamp(36px, 5vw, 48px);
+  cursor: pointer;
+}
+
+.ratingButton:hover {
+  transform: scale(1.08);
+  border-color: #1d4fa3;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.question {
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 600;
+}
+
+.textarea {
+  min-height: clamp(100px, 18vh, 180px);
+  max-height: 24vh;
+  padding: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 16px;
+  font-size: clamp(18px, 2.5vw, 22px);
+  resize: vertical;
+}
+
+.submitButton {
+  min-height: 56px;
+  border: 0;
+  border-radius: 16px;
+  background: #1d4fa3;
+  color: white;
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.thankYou {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+}
