@@ -17,6 +17,9 @@ dist/
 .env
 .env.*.local
 
+# Local notes
+TODO.md
+
 # IDE / OS
 .idea/
 .vscode/
