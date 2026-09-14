@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.feedback import save_feedback
 
@@ -7,7 +7,7 @@ router = APIRouter(prefix="/feedback")
 
 
 class FeedbackRequest(BaseModel):
-    rating: int
+    rating: int = Field(ge=1, le=5)
     comment: str = ""
 
 
