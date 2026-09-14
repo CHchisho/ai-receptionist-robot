@@ -8,7 +8,7 @@ from app.services.tts.base import TtsProvider
 
 
 class ConversationService:
-    """Orchestrates question → retrieval → LLM → TTS. STT joins this path later."""
+    """Orchestrates question → retrieval → LLM → TTS. Voice input is transcribed first."""
 
     def __init__(self, llm: LlmProvider, rag: RagProvider, tts: TtsProvider) -> None:
         self._llm = llm

@@ -1,8 +1,17 @@
+from pathlib import Path
+import sys
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/app/core/config.py → project root
+_ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=None if "pytest" in sys.modules else _ROOT_ENV,
+        extra="ignore",
+    )
 
     app_name: str = "AI Receptionist"
     app_env: str = "development"
@@ -12,6 +21,9 @@ class Settings(BaseSettings):
     stt_provider: str = "mock"
     tts_provider: str = "mock"
     rag_provider: str = "mock"
+
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.2:1b"
 
     whisper_model_size: str = "base"
     whisper_device: str = "cpu"
