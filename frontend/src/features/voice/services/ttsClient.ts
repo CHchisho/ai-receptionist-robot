@@ -11,8 +11,12 @@ export async function playAudio(audioBase64: string): Promise<void> {
   const audio = new Audio(url);
 
   try {
-    await audio.play();
+    await new Promise<void>((resolve, reject) => {
+      audio.onended = () => resolve();
+      audio.onerror = () => reject(new Error("Audio playback failed"));
+      void audio.play().catch(reject);
+    });
   } finally {
-    audio.addEventListener("ended", () => URL.revokeObjectURL(url));
+    URL.revokeObjectURL(url);
   }
 }
