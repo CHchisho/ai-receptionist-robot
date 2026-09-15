@@ -17,6 +17,13 @@ dist/
 .env
 .env.*.local
 
+# Downloaded models (local, non-Docker)
+models/
+backend/models/
+
+# Local notes
+TODO.md
+
 # IDE / OS
 .idea/
 .vscode/

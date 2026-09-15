@@ -20,5 +20,10 @@ class RelatedLink(BaseModel):
 class AskResponse(BaseModel):
     session_id: str
     answer: str
+    audio_base64: str | None = None
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+
+
+class TranscribeResponse(BaseModel):
+    text: str

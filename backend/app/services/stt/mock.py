@@ -1,5 +1,5 @@
 class MockSttProvider:
-    """Stand-in until faster-whisper is wired to microphone audio."""
+    """Default STT provider; used unless STT_PROVIDER=whisper."""
 
     def transcribe(self, audio: bytes) -> str:
         return "transcribed question"
