@@ -1,13 +1,20 @@
 import { useState } from "react";
 import styles from "./FeedbackForm.module.css";
 
-export function FeedbackForm() {
+type FeedbackFormProps = {
+  sessionId?: string;
+};
+
+export function FeedbackForm({ sessionId }: FeedbackFormProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (rating === null) return;
+
+    setError("");
 
     try {
       const response = await fetch("/api/v1/feedback", {
@@ -18,6 +25,7 @@ export function FeedbackForm() {
         body: JSON.stringify({
           rating,
           comment,
+          session_id: sessionId ?? null,
         }),
       });
 
@@ -34,6 +42,7 @@ export function FeedbackForm() {
       }, 3000);
     } catch (error) {
       console.error("Feedback submission failed:", error);
+      setError("Failed to save feedback. Please try again.");
     }
   };
 
@@ -86,6 +95,12 @@ export function FeedbackForm() {
           >
             Submit feedback
           </button>
+
+          {error && (
+            <p role="alert">
+              {error}
+            </p>
+          )}
         </div>
       )}
 

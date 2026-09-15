@@ -61,5 +61,5 @@ export function useConversation() {
     }
   }
 
-  return { messages, links, status, error, ask };
+  return { messages, links, status, error, ask, sessionId };
 }

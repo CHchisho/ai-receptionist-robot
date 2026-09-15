@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
+import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { FeedbackForm } from "@/features/feedback/components/FeedbackForm";
 import styles from "./ReceptionPage.module.css";
 
 export function ReceptionPage() {
   const [showFeedback, setShowFeedback] = useState(false);
+  const conversation = useConversation();
 
   return (
     <main className={styles.page}>
@@ -29,7 +31,11 @@ export function ReceptionPage() {
         </div>
       </header>
 
-      {showFeedback ? <FeedbackForm /> : <ChatPanel />}
+      {showFeedback ? (
+        <FeedbackForm sessionId={conversation.sessionId} />
+      ) : (
+        <ChatPanel conversation={conversation} />
+      )}
     </main>
   );
 }
