@@ -28,6 +28,10 @@ export function FeedbackForm() {
       setSubmitted(true);
       setRating(null);
       setComment("");
+
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 3000);
     } catch (error) {
       console.error("Feedback submission failed:", error);
     }
@@ -49,7 +53,9 @@ export function FeedbackForm() {
         {ratings.map((item) => (
           <button
             key={item.value}
-            className={styles.ratingButton}
+            className={`${styles.ratingButton} ${
+              rating === item.value ? styles.selected : ""
+            }`}
             onClick={() => {
               setRating(item.value);
               setSubmitted(false);

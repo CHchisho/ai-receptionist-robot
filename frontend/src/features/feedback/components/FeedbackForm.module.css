@@ -75,3 +75,8 @@
   font-size: 28px;
   font-weight: 600;
 }
+
+.selected {
+  border: 4px solid #222;
+  transform: scale(1.08);
+}
