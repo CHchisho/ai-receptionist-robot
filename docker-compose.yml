@@ -1,5 +1,5 @@
-# Development stack: frontend + backend + Ollama.
-# First start downloads the configured Ollama / Whisper / Piper models into volumes.
+# Development stack: frontend + backend + Ollama + Qdrant.
+# First start downloads the configured Ollama / Whisper / Piper / embedding models into volumes.
 
 services:
   ollama:
@@ -15,6 +15,13 @@ services:
       retries: 20
       start_period: 10s
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
   backend:
     build:
       context: ./backend
@@ -22,11 +29,15 @@ services:
       - .env
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
+      QDRANT_URL: http://qdrant:6333
+      KNOWLEDGE_DOCUMENTS_DIR: /knowledge/documents
+      SQLITE_PATH: /knowledge/app.sqlite
       PIPER_MODEL_PATH: /models/piper/en_US-lessac-medium.onnx
       HF_HOME: /models/hf
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ./backend:/app
+      - ./knowledge:/knowledge
       - piper_models:/models/piper
       - whisper_models:/models/hf
     ports:
@@ -34,6 +45,8 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 10s
@@ -63,4 +76,5 @@ volumes:
   ollama_data:
   piper_models:
   whisper_models:
+  qdrant_data:
   frontend_node_modules:

@@ -8,15 +8,9 @@ from typing import Any
 
 import httpx
 
-from app.services.rag.base import RetrievedChunk
+from app.services.llm.prompt import SYSTEM_PROMPT, build_user_prompt
 
 logger = logging.getLogger(__name__)
-
-SYSTEM_PROMPT = """You are Lena, a friendly receptionist at Nokia Espoo Innovation Garage.
-
-Reply briefly and clearly in 1–4 sentences. Speak the visitor's language when possible.
-
-Use the provided knowledge-base context for factual information. For navigation, use only verified location information. If the answer is not in the provided context, say you do not know. Never invent facts, schedules, locations, or confidential information."""
 
 
 class OllamaLlmProvider:
@@ -75,7 +69,7 @@ class OllamaLlmProvider:
                 "stream": False,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": self._user_prompt(question, context)},
+                    {"role": "user", "content": build_user_prompt(question, context)},
                 ],
             },
         )
@@ -101,15 +95,3 @@ class OllamaLlmProvider:
         if ":" not in wanted and available.split(":")[0] == wanted:
             return True
         return False
-
-    @staticmethod
-    def _user_prompt(question: str, context: list) -> str:
-        chunks = [chunk for chunk in context if isinstance(chunk, RetrievedChunk)]
-        if not chunks:
-            return question
-
-        lines = []
-        for chunk in chunks:
-            lines.append(f"- {chunk.title}: {chunk.snippet}")
-        joined = "\n".join(lines)
-        return f"Context:\n{joined}\n\nQuestion: {question}"

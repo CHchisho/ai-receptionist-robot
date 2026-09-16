@@ -31,9 +31,37 @@ class Settings(BaseSettings):
 
     piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
 
+    qdrant_url: str = "http://127.0.0.1:6333"
+    qdrant_collection: str = "lena_knowledge"
+    ollama_embed_model: str = "nomic-embed-text"
+    knowledge_documents_dir: str = "knowledge/documents"
+    knowledge_urls: str = ""
+    knowledge_refresh: bool = False
+    sqlite_path: str = "knowledge/app.sqlite"
+    rag_top_k: int = 5
+    rag_score_threshold: float = 0.25
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def knowledge_url_list(self) -> list[str]:
+        return [item.strip() for item in self.knowledge_urls.split(",") if item.strip()]
+
+    @property
+    def knowledge_documents_path(self) -> Path:
+        path = Path(self.knowledge_documents_dir)
+        if path.is_absolute():
+            return path
+        return _ROOT_ENV.parent / path
+
+    @property
+    def sqlite_file(self) -> Path:
+        path = Path(self.sqlite_path)
+        if path.is_absolute():
+            return path
+        return _ROOT_ENV.parent / path
 
 
 settings = Settings()

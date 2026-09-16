@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { HistoryPanel } from "@/features/history/HistoryPanel";
+import { SourcesPanel } from "@/features/knowledge/SourcesPanel";
 import styles from "./AdminPage.module.css";
 
 type FeedbackItem = {
@@ -41,6 +43,10 @@ export function AdminPage() {
           Back to receptionist
         </Link>
       </header>
+      <div className={styles.grid}>
+        <SourcesPanel />
+        <HistoryPanel />
+      </div>
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Sources</h2>
         <p className={styles.copy}>

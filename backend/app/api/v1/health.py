@@ -13,4 +13,5 @@ def health() -> dict[str, str]:
         "llm": settings.llm_provider,
         "stt": settings.stt_provider,
         "tts": settings.tts_provider,
+        "rag": settings.rag_provider,
     }
