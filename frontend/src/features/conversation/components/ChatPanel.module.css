@@ -15,20 +15,25 @@
 .messages {
   height: 100%;
   overflow: auto;
-  padding: 0.25rem 0.15rem 9.5rem;
+  padding: 0.25rem 0.15rem 17rem;
 }
 
 .recordOverlay {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0.75rem;
+  left: 50%;
+  top: 62%;
   z-index: 1;
+  width: min(92%, 34rem);
+  min-height: 16rem;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.8rem;
   pointer-events: none;
+  padding: 1.25rem;
+  text-align: center;
 }
 
 .recordOverlay > * {
@@ -36,11 +41,99 @@
 }
 
 .status,
-.error {
+.error,
+.notice {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: clamp(1.25rem, 2.4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .error {
   color: var(--color-danger);
+}
+
+.notice {
+  color: var(--color-danger);
+}
+
+.listeningOverlay {
+  border-radius: 2rem;
+  background: color-mix(in srgb, #fff 86%, var(--color-danger));
+  box-shadow: 0 0 0 8px rgba(180, 35, 24, 0.12), 0 1.5rem 4rem rgba(18, 32, 44, 0.16);
+}
+
+.welcomeMicButton,
+.stopButton,
+.typeToggle {
+  border: 0;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.welcomeMicButton {
+  width: clamp(9rem, 18vw, 12rem);
+  height: clamp(9rem, 18vw, 12rem);
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.welcomeMicButton:hover:not(:disabled) {
+  transform: scale(1.04);
+}
+
+.welcomeMicIcon {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.welcomeMicText {
+  font-size: clamp(1.05rem, 2vw, 1.4rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stopButton {
+  min-width: 10rem;
+  min-height: 4rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 1.35rem;
+}
+
+.welcomeMicButton:disabled,
+.stopButton:disabled,
+.typeToggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.typeArea {
+  display: flex;
+  justify-content: center;
+}
+
+.typeArea > form {
+  width: min(100%, 52rem);
+}
+
+.typeToggle {
+  min-height: 3rem;
+  padding: 0 1.2rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
 }
