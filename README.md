@@ -110,3 +110,7 @@ frontend/src/
 → `POST /api/v1/conversation/transcribe` (multipart file upload)
 → Whisper (or mock STT) → `{ text }`
 → recognised text is passed into the same `ask()` flow as typed input
+
+## Visitor feedback storage
+
+Visitor feedback is stored in SQLite at `backend/app/data/feedback.db`. The database file is local runtime data and is excluded from Git.

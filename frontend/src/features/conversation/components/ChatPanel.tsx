@@ -5,8 +5,12 @@ import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { RecordButton } from "@/features/voice/components/RecordButton";
 import styles from "./ChatPanel.module.css";
 
-export function ChatPanel() {
-  const { messages, status, error, ask } = useConversation();
+type ChatPanelProps = {
+  conversation: ReturnType<typeof useConversation>;
+};
+
+export function ChatPanel({ conversation }: ChatPanelProps) {
+  const { messages, status, error, ask } = conversation;
   const busy = status === "processing";
   const messagesRef = useRef<HTMLDivElement>(null);
 

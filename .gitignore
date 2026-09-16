@@ -31,3 +31,4 @@ TODO.md
 Thumbs.db
 
 backend/app/data/feedback.json
+backend/app/data/feedback.db
