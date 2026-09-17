@@ -64,7 +64,7 @@ npm run dev
 
 Open http://localhost:5173
 
-Staff: http://localhost:5173/admin — knowledge sources (add/remove file or URL, reindex, view chunks) and chat history (retrieved context + prompt). SQLite file: `knowledge/app.sqlite`.
+Staff: http://localhost:5173/admin — knowledge sources (add/remove file or URL, reindex, view chunks), chat history, and visitor feedback. App SQLite: `knowledge/app.sqlite`.
 
 Vite proxies `/api` to the backend (`VITE_API_PROXY_TARGET`, default `http://localhost:8000`).
 
@@ -116,7 +116,3 @@ frontend/src/
 → `POST /api/v1/conversation/transcribe` (multipart file upload)
 → Whisper (or mock STT) → `{ text }`
 → recognised text is passed into the same `ask()` flow as typed input
-
-## Visitor feedback storage
-
-Visitor feedback is stored in SQLite at `backend/app/data/feedback.db`. The database file is local runtime data and is excluded from Git.

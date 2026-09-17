@@ -50,7 +50,15 @@ def _init(connection: sqlite3.Connection) -> None:
             user_prompt TEXT NOT NULL,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rating INTEGER NOT NULL,
+            comment TEXT NOT NULL DEFAULT '',
+            session_id TEXT,
+            created_at TEXT NOT NULL
+        );
         CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id, id);
+        CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id, id);
         """
     )
     connection.commit()
@@ -185,6 +193,43 @@ def list_turns(session_id: str) -> list[dict]:
         item["retrieved"] = json.loads(item.pop("retrieved_json") or "[]")
         turns.append(item)
     return turns
+
+
+def save_feedback(
+    rating: int,
+    comment: str,
+    session_id: str | None = None,
+) -> dict:
+    created_at = _utc_now()
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO feedback (rating, comment, session_id, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (rating, comment, session_id, created_at),
+        )
+        feedback_id = cursor.lastrowid
+        connection.commit()
+    return {
+        "id": feedback_id,
+        "rating": rating,
+        "comment": comment,
+        "session_id": session_id,
+        "created_at": created_at,
+    }
+
+
+def list_feedback() -> list[dict]:
+    with connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, rating, comment, session_id, created_at
+            FROM feedback
+            ORDER BY id DESC
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def file_sha256(path: Path) -> str:
