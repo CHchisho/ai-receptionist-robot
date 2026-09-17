@@ -1,7 +1,8 @@
-/** Decode base64 PCM/WAV audio from the ask response and play it in the browser. */
-export async function playAudio(audioBase64: string): Promise<void> {
+/** Decode base64 PCM/WAV audio from the ask response. */
+export function createAudio(audioBase64: string): HTMLAudioElement {
   const binary = atob(audioBase64);
   const bytes = new Uint8Array(binary.length);
+
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
   }
@@ -10,9 +11,15 @@ export async function playAudio(audioBase64: string): Promise<void> {
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
 
-  try {
-    await audio.play();
-  } finally {
-    audio.addEventListener("ended", () => URL.revokeObjectURL(url));
-  }
+  audio.addEventListener("ended", () => {
+    URL.revokeObjectURL(url);
+  });
+
+  return audio;
+}
+
+/** Play audio from a base64 WAV response. */
+export async function playAudio(audioBase64: string): Promise<void> {
+  const audio = createAudio(audioBase64);
+  await audio.play();
 }

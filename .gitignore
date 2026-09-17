@@ -22,3 +22,7 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Piper TTS models
+*.onnx
+*.onnx.json
