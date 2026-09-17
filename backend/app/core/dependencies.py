@@ -46,6 +46,20 @@ def get_llm_provider() -> LlmProvider:
 
 @lru_cache
 def get_rag_provider() -> RagProvider:
+    if settings.rag_provider == "qdrant":
+        from app.services.rag.embeddings import OllamaEmbedder
+        from app.services.rag.qdrant import QdrantRagProvider
+
+        return QdrantRagProvider(
+            url=settings.qdrant_url,
+            collection=settings.qdrant_collection,
+            embedder=OllamaEmbedder(
+                base_url=settings.ollama_base_url,
+                model=settings.ollama_embed_model,
+            ),
+            top_k=settings.rag_top_k,
+            score_threshold=settings.rag_score_threshold,
+        )
     if settings.rag_provider != "mock":
         raise RuntimeError(f"RAG provider '{settings.rag_provider}' is not wired yet")
 

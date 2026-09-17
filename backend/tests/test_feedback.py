@@ -1,10 +1,9 @@
+from app.core.config import settings
 from app.services import feedback
+from app.services.knowledge import store
 
 
-def test_save_and_list_feedback(tmp_path, monkeypatch):
-    test_db = tmp_path / "feedback.db"
-    monkeypatch.setattr(feedback, "DB_FILE", test_db)
-
+def test_save_and_list_feedback():
     saved = feedback.save_feedback(
         rating=5,
         comment="Great service",

@@ -30,5 +30,7 @@ TODO.md
 .DS_Store
 Thumbs.db
 
+knowledge/*.sqlite
+knowledge/*.sqlite-*
 backend/app/data/feedback.json
 backend/app/data/feedback.db

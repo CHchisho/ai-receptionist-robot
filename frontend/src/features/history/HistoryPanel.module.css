@@ -1,0 +1,135 @@
+.card {
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.copy,
+.meta {
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.copy {
+  margin: 0 0 1rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.item {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.session {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 600;
+}
+
+.turn {
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.turn p {
+  margin: 0;
+}
+
+.lenaRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.lenaRow p {
+  margin: 0;
+  flex: 1;
+}
+
+.info {
+  flex: 0 0 1.7rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-top: 0.05rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-accent);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info[aria-expanded="true"] {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.details {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--color-bg);
+}
+
+.details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.details details {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.retrieved {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.retrieved span {
+  display: block;
+  color: var(--color-muted);
+}
+
+.prompt {
+  margin: 0;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  background: #fff;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
+
+.error {
+  color: var(--color-danger);
+}
