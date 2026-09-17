@@ -25,5 +25,13 @@ class AskResponse(BaseModel):
     sources: list[SourceChunk] = []
 
 
+class SpeakRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+class SpeakResponse(BaseModel):
+    audio_base64: str | None = None
+
+
 class TranscribeResponse(BaseModel):
     text: str
