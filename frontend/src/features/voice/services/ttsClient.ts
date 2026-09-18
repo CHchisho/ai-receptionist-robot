@@ -20,6 +20,8 @@ function audioUrlFromBase64(audioBase64: string) {
 export function createAudioPlayback(audioBase64: string): AudioPlayback {
   const url = audioUrlFromBase64(audioBase64);
   const audio = new Audio(url);
+  const savedVolume = Number(localStorage.getItem("tts-volume") ?? "1");
+  audio.volume = Math.min(1, Math.max(0, savedVolume));
   let stop = () => {};
   let settled = false;
 

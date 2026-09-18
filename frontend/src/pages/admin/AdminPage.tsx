@@ -12,6 +12,8 @@ type FeedbackItem = {
   created_at: string;
 };
 
+type KioskMode = "chat" | "survey";
+
 function formatWhen(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -29,8 +31,25 @@ function formatWhen(value: string) {
 export function AdminPage() {
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [kioskMode, setKioskMode] = useState<KioskMode>("chat");
+  const [kioskError, setKioskError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetch("/api/v1/kiosk/mode")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load kiosk mode");
+        }
+        return response.json();
+      })
+      .then((data: { mode: KioskMode }) => {
+        setKioskMode(data.mode);
+        setKioskError(null);
+      })
+      .catch(() => {
+        setKioskError("Could not load reception mode.");
+      });
+
     fetch("/api/v1/feedback")
       .then((response) => {
         if (!response.ok) {
@@ -47,6 +66,29 @@ export function AdminPage() {
       });
   }, []);
 
+  function updateKioskMode(mode: KioskMode) {
+    fetch("/api/v1/kiosk/mode", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ mode }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update kiosk mode");
+        }
+        return response.json();
+      })
+      .then((data: { mode: KioskMode }) => {
+        setKioskMode(data.mode);
+        setKioskError(null);
+      })
+      .catch(() => {
+        setKioskError("Could not update reception mode.");
+      });
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -58,6 +100,32 @@ export function AdminPage() {
           Back to receptionist
         </Link>
       </header>
+      <section className={styles.card}>
+        <h2 className={styles.cardTitle}>Reception mode</h2>
+        <p className={styles.copy}>
+          Choose what visitors see on the reception tablet.
+        </p>
+
+        <div className={styles.modeButtons}>
+          <button
+            type="button"
+            className={kioskMode === "chat" ? styles.activeMode : styles.modeButton}
+            onClick={() => updateKioskMode("chat")}
+          >
+            Chat
+          </button>
+
+          <button
+            type="button"
+            className={kioskMode === "survey" ? styles.activeMode : styles.modeButton}
+            onClick={() => updateKioskMode("survey")}
+          >
+            Survey
+          </button>
+        </div>
+
+        {kioskError ? <p className={styles.error}>{kioskError}</p> : null}
+      </section>
       <div className={styles.grid}>
         <SourcesPanel />
         <div className={styles.side}>
