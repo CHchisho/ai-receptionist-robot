@@ -31,21 +31,52 @@ export function useConversation() {
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [welcomeSpoken, setWelcomeSpoken] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(
+    null,
+  );
+  const [audioProgress, setAudioProgress] = useState(0);
+
   const playbackRef = useRef<AudioPlayback | null>(null);
   const welcomeStartedRef = useRef(false);
 
-  async function playBase64Audio(audioBase64: string) {
+  async function playBase64Audio(
+    audioBase64: string,
+    messageId?: string,
+  ) {
+    playbackRef.current?.stop();
+
     setStatus("speaking");
+
+    if (messageId) {
+      setPlayingMessageId(messageId);
+      setAudioProgress(0);
+    }
+
     const playback = createAudioPlayback(audioBase64);
     playbackRef.current = playback;
+
+    const removeProgressListener = playback.onProgress?.(
+      (progress) => {
+        if (messageId) {
+          setAudioProgress(progress);
+        }
+      },
+    );
 
     try {
       await playback.finished;
     } catch {
       // Playback issues should not block the conversation.
     } finally {
+      removeProgressListener?.();
+
       if (playbackRef.current === playback) {
         playbackRef.current = null;
+      }
+
+      if (messageId) {
+        setPlayingMessageId(null);
+        setAudioProgress(0);
       }
     }
   }
@@ -89,10 +120,12 @@ export function useConversation() {
               },
             ];
 
+      const assistantMessageId = createId();
+
       setMessages((current) => [
         ...current,
         {
-          id: createId(),
+          id: assistantMessageId,
           role: "assistant",
           content: response.answer,
           createdAt: new Date().toISOString(),
@@ -102,7 +135,10 @@ export function useConversation() {
       ]);
 
       if (response.audio_base64) {
-        await playBase64Audio(response.audio_base64);
+        await playBase64Audio(
+          response.audio_base64,
+          assistantMessageId,
+        );
       }
 
       setStatus("idle");
@@ -145,6 +181,8 @@ export function useConversation() {
   function stopSpeaking() {
     playbackRef.current?.stop();
     playbackRef.current = null;
+    setPlayingMessageId(null);
+    setAudioProgress(0);
     setStatus("idle");
   }
 
@@ -157,5 +195,7 @@ export function useConversation() {
     stopSpeaking,
     speakWelcomeOnce,
     welcomeSpoken,
+    playingMessageId,
+    audioProgress,
   };
 }

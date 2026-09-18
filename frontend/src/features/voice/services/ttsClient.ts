@@ -3,7 +3,15 @@ import { env } from "@/shared/config/env";
 export type AudioPlayback = {
   finished: Promise<void>;
   stop: () => void;
+  onProgress?: (callback: (progress: number) => void) => () => void;
 };
+
+let activeAudioStop: (() => void) | null = null;
+
+export function stopActiveAudio() {
+  activeAudioStop?.();
+  activeAudioStop = null;
+}
 
 function audioUrlFromBase64(audioBase64: string) {
   const binary = atob(audioBase64);
@@ -22,8 +30,25 @@ export function createAudio(audioBase64: string): HTMLAudioElement {
   const url = audioUrlFromBase64(audioBase64);
   const audio = new Audio(url);
 
+  const stop = () => {
+    audio.pause();
+    audio.currentTime = 0;
+    URL.revokeObjectURL(url);
+
+    if (activeAudioStop === stop) {
+      activeAudioStop = null;
+    }
+  };
+
+  stopActiveAudio();
+  activeAudioStop = stop;
+
   audio.addEventListener("ended", () => {
     URL.revokeObjectURL(url);
+
+    if (activeAudioStop === stop) {
+      activeAudioStop = null;
+    }
   });
 
   return audio;
@@ -35,21 +60,34 @@ export async function playAudio(audioBase64: string): Promise<void> {
   await audio.play();
 }
 
-/** Decode base64 WAV audio and manage its playback. */
-export function createAudioPlayback(audioBase64: string): AudioPlayback {
+/** Decode base64 audio and manage its playback. */
+export function createAudioPlayback(
+  audioBase64: string,
+): AudioPlayback {
   const url = audioUrlFromBase64(audioBase64);
   const audio = new Audio(url);
+  const progressListeners = new Set<(progress: number) => void>();
   let stop = () => {};
   let settled = false;
+
+  stopActiveAudio();
 
   const finished = new Promise<void>((resolve, reject) => {
     function cleanup() {
       URL.revokeObjectURL(url);
+      progressListeners.clear();
+    }
+
+    function notifyProgress(progress: number) {
+      progressListeners.forEach((callback) => {
+        callback(progress);
+      });
     }
 
     function finish() {
       if (settled) return;
       settled = true;
+      notifyProgress(100);
       cleanup();
       resolve();
     }
@@ -65,6 +103,15 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
       );
     }
 
+    audio.ontimeupdate = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        const progress =
+          (audio.currentTime / audio.duration) * 100;
+
+        notifyProgress(Math.min(progress, 100));
+      }
+    };
+
     audio.onended = finish;
     audio.onerror = () =>
       fail(new Error("Audio playback failed"));
@@ -75,10 +122,22 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
       finish();
     };
 
+    activeAudioStop = stop;
+
     void audio.play().catch(fail);
   });
 
-  return { finished, stop };
+  return {
+    finished,
+    stop,
+    onProgress: (callback) => {
+      progressListeners.add(callback);
+
+      return () => {
+        progressListeners.delete(callback);
+      };
+    },
+  };
 }
 
 export async function synthesizeSpeech(
