@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -25,5 +27,37 @@ class AskResponse(BaseModel):
     sources: list[SourceChunk] = []
 
 
+class SpeakRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+class SpeakResponse(BaseModel):
+    audio_base64: str | None = None
+
+
 class TranscribeResponse(BaseModel):
     text: str
+
+
+class HistorySessionSummary(BaseModel):
+    session_id: str
+    started_at: str
+    updated_at: str
+    turn_count: int
+    last_question: str | None = None
+
+
+class HistoryTurn(BaseModel):
+    id: int
+    session_id: str
+    question: str
+    answer: str
+    retrieved: list[dict[str, Any]]
+    system_prompt: str
+    user_prompt: str
+    created_at: str
+
+
+class HistorySessionDetail(BaseModel):
+    session_id: str
+    turns: list[HistoryTurn]

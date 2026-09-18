@@ -2,7 +2,9 @@ from functools import lru_cache
 
 from app.core.config import settings
 from app.services.conversation import ConversationService
+from app.services.llm.base import LlmProvider
 from app.services.llm.mock import MockLlmProvider
+from app.services.rag.base import RagProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
 from app.services.stt.mock import MockSttProvider
@@ -26,19 +28,52 @@ def get_tts_provider() -> TtsProvider:
     return MockTtsProvider()
 
 
+@lru_cache
+def get_llm_provider() -> LlmProvider:
+    """Build the LLM provider used to generate answers."""
+    if settings.llm_provider == "ollama":
+        from app.services.llm.ollama import OllamaLlmProvider  # imported lazily so mock mode needs no Ollama
+
+        return OllamaLlmProvider(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+        )
+    if settings.llm_provider != "mock":
+        raise RuntimeError(f"LLM provider '{settings.llm_provider}' is not wired yet")
+
+    return MockLlmProvider()
+
+
+@lru_cache
+def get_rag_provider() -> RagProvider:
+    if settings.rag_provider == "qdrant":
+        from app.services.rag.embeddings import OllamaEmbedder
+        from app.services.rag.qdrant import QdrantRagProvider
+
+        return QdrantRagProvider(
+            url=settings.qdrant_url,
+            collection=settings.qdrant_collection,
+            embedder=OllamaEmbedder(
+                base_url=settings.ollama_base_url,
+                model=settings.ollama_embed_model,
+            ),
+            top_k=settings.rag_top_k,
+            score_threshold=settings.rag_score_threshold,
+        )
+    if settings.rag_provider != "mock":
+        raise RuntimeError(f"RAG provider '{settings.rag_provider}' is not wired yet")
+
+    return MockRagProvider()
+
+
 def get_conversation_service() -> ConversationService:
     """Build the conversation pipeline from configured providers.
 
     Swap mock implementations for Ollama / Qdrant without changing the API layer.
     """
-    if settings.llm_provider != "mock":
-        raise RuntimeError(f"LLM provider '{settings.llm_provider}' is not wired yet")
-    if settings.rag_provider != "mock":
-        raise RuntimeError(f"RAG provider '{settings.rag_provider}' is not wired yet")
-
     return ConversationService(
-        llm=MockLlmProvider(),
-        rag=MockRagProvider(),
+        llm=get_llm_provider(),
+        rag=get_rag_provider(),
         tts=get_tts_provider(),
     )
 

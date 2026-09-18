@@ -1,3 +1,7 @@
+from fastapi.testclient import TestClient
+
+from app.core.dependencies import get_tts_provider
+from app.main import create_app
 from app.schemas.conversation import AskRequest
 from app.services.conversation import ConversationService
 from app.services.llm.mock import MockLlmProvider
@@ -25,3 +29,18 @@ def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
     result = service.ask(AskRequest(text="What is Nokia?"))
 
     assert result.audio_base64 == "ZmFrZS1hdWRpby1ieXRlcw=="
+
+
+def test_speak_endpoint_returns_base64_audio() -> None:
+    class FakeTtsProvider:
+        def synthesize(self, text: str) -> bytes:
+            return b"welcome-audio"
+
+    application = create_app()
+    application.dependency_overrides[get_tts_provider] = lambda: FakeTtsProvider()
+    client = TestClient(application)
+
+    response = client.post("/api/v1/conversation/speak", json={"text": "Welcome"})
+
+    assert response.status_code == 200
+    assert response.json()["audio_base64"] == "d2VsY29tZS1hdWRpbw=="

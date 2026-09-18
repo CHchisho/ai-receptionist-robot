@@ -11,10 +11,11 @@ export class ApiError extends Error {
 }
 
 export async function http<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
   const response = await fetch(`${env.apiBaseUrl}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(init?.headers ?? {}),
     },
   });
