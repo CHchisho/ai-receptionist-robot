@@ -10,7 +10,9 @@ type ChatPanelProps = {
 };
 
 export function ChatPanel({ conversation }: ChatPanelProps) {
-  const { messages, status, error, ask, stopSpeaking, speakWelcomeOnce, welcomeSpoken } = conversation;
+  const {
+  messages,status,error,ask,stopSpeaking,speakWelcomeOnce,welcomeSpoken,playingMessageId,audioProgress,
+} = conversation;
   const [showTypeForm, setShowTypeForm] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [recordingState, setRecordingState] = useState<"idle" | "recording" | "processing">("idle");
@@ -47,7 +49,11 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
     <section className={styles.panel} aria-label="Conversation with Lena">
       <div className={styles.chat}>
         <div className={styles.messages} ref={messagesRef}>
-          <MessageList messages={messages} />
+          <MessageList
+            messages={messages}
+            activeMessageId={playingMessageId}
+            activeProgress={audioProgress}
+          />
         </div>
         <div className={`${styles.recordOverlay} ${isListening ? styles.listeningOverlay : ""}`}>
           {error ? <p className={styles.error}>{error}</p> : null}

@@ -17,7 +17,10 @@ export function LinkifiedText({ text, onLinkClick }: Props) {
             <span
               key={`${part}-${index}`}
               className={styles.link}
-              onClick={() => onLinkClick(part)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onLinkClick(part);
+        }}
               role="button"
               tabIndex={0}
             >
