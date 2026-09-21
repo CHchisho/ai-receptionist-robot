@@ -30,6 +30,9 @@ TODO.md
 .DS_Store
 Thumbs.db
 
+# Piper TTS models
+*.onnx
+*.onnx.json
 knowledge/*.sqlite
 knowledge/*.sqlite-*
 backend/app/data/feedback.json

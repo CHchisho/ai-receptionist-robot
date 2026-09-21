@@ -41,3 +41,31 @@
   font-size: 1.05rem;
   line-height: 1.45;
 }
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transition: width 0.5s linear;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.time {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
