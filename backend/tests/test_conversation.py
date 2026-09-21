@@ -5,12 +5,19 @@ from app.main import create_app
 from app.schemas.conversation import AskRequest
 from app.services.conversation import ConversationService
 from app.services.llm.mock import MockLlmProvider
+from app.services.navigation.base import Location
+from app.services.navigation.mock import MockNavigationProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.tts.mock import MockTtsProvider
 
 
 def test_ask_returns_mock_ai_answer() -> None:
-    service = ConversationService(llm=MockLlmProvider(), rag=MockRagProvider(), tts=MockTtsProvider())
+    service = ConversationService(
+        llm=MockLlmProvider(),
+        rag=MockRagProvider(),
+        tts=MockTtsProvider(),
+        navigation=MockNavigationProvider(),
+    )
     result = service.ask(AskRequest(text="What is Nokia?"))
 
     assert result.answer == "AI answer"
@@ -18,6 +25,7 @@ def test_ask_returns_mock_ai_answer() -> None:
     assert result.links == []
     assert result.sources == []
     assert result.audio_base64 is None
+    assert result.route is None
 
 
 def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
@@ -25,10 +33,40 @@ def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
         def synthesize(self, text: str) -> bytes:
             return b"fake-audio-bytes"
 
-    service = ConversationService(llm=MockLlmProvider(), rag=MockRagProvider(), tts=FakeTtsProvider())
+    service = ConversationService(
+        llm=MockLlmProvider(),
+        rag=MockRagProvider(),
+        tts=FakeTtsProvider(),
+        navigation=MockNavigationProvider(),
+    )
     result = service.ask(AskRequest(text="What is Nokia?"))
 
     assert result.audio_base64 == "ZmFrZS1hdWRpby1ieXRlcw=="
+
+
+def test_ask_includes_structured_navigation_context() -> None:
+    class FakeNavigationProvider:
+        def find(self, query: str) -> Location:
+            return Location(
+                name="Meeting room",
+                floor="1st floor",
+                landmark="opposite the restrooms",
+                directions="Walk past the demo area. The meeting room is on your right.",
+            )
+
+    service = ConversationService(
+        llm=MockLlmProvider(),
+        rag=MockRagProvider(),
+        tts=MockTtsProvider(),
+        navigation=FakeNavigationProvider(),
+    )
+    result = service.ask(AskRequest(text="Where is the meeting room?"))
+
+    assert result.route is not None
+    assert result.route.name == "Meeting room"
+    assert result.route.floor == "1st floor"
+    assert result.route.landmark == "opposite the restrooms"
+    assert result.sources[0].source_id == "navigation:meeting-room"
 
 
 def test_speak_endpoint_returns_base64_audio() -> None:

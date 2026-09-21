@@ -137,6 +137,26 @@ export function MessageList({
                 </div>
               ) : null}
 
+              {message.role === "assistant" && message.route ? (
+                <section className={styles.routeCard} aria-label="Route details">
+                  <div>
+                    <span className={styles.routeLabel}>Where</span>
+                    <strong>{message.route.name}</strong>
+                  </div>
+                  <div className={styles.routeGrid}>
+                    <div>
+                      <span className={styles.routeLabel}>Floor</span>
+                      <strong>{message.route.floor}</strong>
+                    </div>
+                    <div>
+                      <span className={styles.routeLabel}>Landmark</span>
+                      <strong>{message.route.landmark}</strong>
+                    </div>
+                  </div>
+                  <p>{message.route.directions}</p>
+                </section>
+              ) : null}
+
               {message.role === "assistant" &&
               message.audioBase64 &&
               isPlaying ? (

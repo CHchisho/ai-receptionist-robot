@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.services.conversation import ConversationService
 from app.services.llm.base import LlmProvider
 from app.services.llm.mock import MockLlmProvider
+from app.services.navigation.base import NavigationProvider
+from app.services.navigation.mock import MockNavigationProvider
 from app.services.rag.base import RagProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
@@ -75,7 +77,13 @@ def get_conversation_service() -> ConversationService:
         llm=get_llm_provider(),
         rag=get_rag_provider(),
         tts=get_tts_provider(),
+        navigation=get_navigation_provider(),
     )
+
+
+@lru_cache
+def get_navigation_provider() -> NavigationProvider:
+    return MockNavigationProvider()
 
 
 @lru_cache
