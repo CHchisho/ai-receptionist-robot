@@ -4,28 +4,73 @@ from app.services.navigation.base import Location
 _LOCATIONS = [
     (
         Location(
-            name="Meeting room",
-            floor="1st floor",
-            landmark="opposite the restrooms",
-            directions="Walk past the demo area toward the glass wall. The meeting room is on your right, opposite the restrooms.",
+            name="Main entrance",
+            floor="1st floor, A-wing",
+            landmark="entrance on the left side of the Innovation Garage map",
+            directions="You are at the main entrance when you enter the Innovation Garage from the A-wing corridor.",
         ),
-        {"meeting", "meeting room", "room", "conference", "conference room"},
+        {"main entrance", "entrance", "front door", "reception"},
     ),
     (
         Location(
-            name="Demo area",
-            floor="1st floor",
-            landmark="next to the main reception tablet",
-            directions="Stay on this floor and follow the open display space. The demo area is next to the main reception tablet.",
+            name="Lounge",
+            floor="1st floor, A-wing",
+            landmark="immediately after the main entrance",
+            directions="From the main entrance, go straight into the first open area. The lounge is directly ahead before the Innovation wall.",
         ),
-        {"demo", "demo area", "demos", "display", "showcase"},
+        {"lounge", "seating", "sofa", "waiting area"},
+    ),
+    (
+        Location(
+            name="Innovation wall",
+            floor="1st floor, A-wing",
+            landmark="between the lounge and the stage area",
+            directions="From the main entrance, pass the lounge and continue into the open Innovation Garage area. The Innovation wall is on the route toward the stage.",
+        ),
+        {"innovation wall", "wall", "display wall", "innovation display"},
+    ),
+    (
+        Location(
+            name="Stage",
+            floor="1st floor, A-wing",
+            landmark="large open presentation area near the meeting room",
+            directions="From the main entrance, walk through the lounge, continue past the Innovation wall, and enter the large open area. The stage is on the right side of that area.",
+        ),
+        {"stage", "presentation area", "presentations", "event area"},
+    ),
+    (
+        Location(
+            name="Ad-hoc meeting room",
+            floor="1st floor, A-wing",
+            landmark="left side below the main entrance area",
+            directions="From the main entrance, turn left toward the side corridor. The ad-hoc meeting room is on the left side below the entrance area, before the restrooms.",
+        ),
+        {"ad-hoc meeting", "ad hoc meeting", "ad-hoc meeting room", "ad hoc meeting room", "small meeting room"},
+    ),
+    (
+        Location(
+            name="Meeting room",
+            floor="1st floor, A-wing",
+            landmark="top-right corner near the stage",
+            directions="From the main entrance, go through the lounge and past the Innovation wall to the stage area. Continue to the top-right corner of the Garage; the meeting room is beside the stage.",
+        ),
+        {"meeting", "meeting room", "conference", "conference room"},
+    ),
+    (
+        Location(
+            name="Kitchen",
+            floor="1st floor, A-wing",
+            landmark="right side of the Innovation Garage map",
+            directions="From the main entrance, walk through the lounge and past the Innovation wall into the open area, then continue to the right-hand side. The kitchen is on the far right side of the Garage.",
+        ),
+        {"kitchen", "coffee", "tea", "water", "break area"},
     ),
     (
         Location(
             name="Restrooms",
-            floor="1st floor",
-            landmark="beside the meeting room",
-            directions="Walk past the demo area toward the glass wall. The restrooms are beside the meeting room.",
+            floor="1st floor, A-wing",
+            landmark="lower-left side near the ad-hoc meeting room",
+            directions="From the main entrance, turn toward the left-side corridor below the lounge. The restrooms are on the lower-left side near the ad-hoc meeting room.",
         ),
         {"restroom", "restrooms", "toilet", "toilets", "bathroom"},
     ),
