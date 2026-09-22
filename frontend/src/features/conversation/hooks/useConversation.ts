@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
 import type {
   ChatLink,
+
   ChatMessage,
 } from "@/features/conversation/types";
 import {
@@ -110,15 +111,7 @@ export function useConversation() {
 
       setSessionId(response.session_id);
 
-      const temporaryLinks: ChatLink[] =
-        response.links.length > 0
-          ? response.links
-          : [
-              {
-                url: "https://www.nokia.com/",
-                label: "Nokia website",
-              },
-            ];
+      const temporaryLinks: ChatLink[] = response.links;
 
       const assistantMessageId = createId();
 
@@ -131,6 +124,7 @@ export function useConversation() {
           createdAt: new Date().toISOString(),
           links: temporaryLinks,
           audioBase64: response.audio_base64,
+          card: response.card,
         },
       ]);
 

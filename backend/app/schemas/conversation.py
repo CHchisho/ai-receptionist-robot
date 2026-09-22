@@ -19,12 +19,23 @@ class RelatedLink(BaseModel):
     label: str
 
 
+class ContentCard(BaseModel):
+    kind: str
+    title: str
+    description: str
+    location: str | None = None
+    event_time: str | None = None
+    room: str | None = None
+    url: str | None = None
+
+
 class AskResponse(BaseModel):
     session_id: str
     answer: str
     audio_base64: str | None = None
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+    card: ContentCard | None = None
 
 
 class SpeakRequest(BaseModel):

@@ -12,6 +12,17 @@ export type ChatMessage = {
   createdAt: string;
   links?: ChatLink[];
   audioBase64?: string | null;
+  card?: ContentCard | null;
+};
+
+export type ContentCard = {
+  kind: "demo" | "event";
+  title: string;
+  description: string;
+  location?: string | null;
+  event_time?: string | null;
+  room?: string | null;
+  url?: string | null;
 };
 
 export type AskResponse = {
@@ -20,4 +31,5 @@ export type AskResponse = {
   audio_base64: string | null;
   links: ChatLink[];
   sources: { source_id: string; title: string; snippet: string }[];
+  card: ContentCard | null;
 };

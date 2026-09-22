@@ -57,6 +57,22 @@ def _init(connection: sqlite3.Connection) -> None:
             session_id TEXT,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS demos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            location TEXT NOT NULL,
+            url TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            room TEXT NOT NULL,
+            description TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS kiosk_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             mode TEXT NOT NULL DEFAULT 'chat'
@@ -67,7 +83,94 @@ def _init(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id, id);
         """
     )
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS seed_versions (
+            name TEXT PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        )
+        """
+    )
     connection.commit()
+
+
+def seed_demo_content() -> None:
+    seed_name = "demo-content-v1"
+
+    with connect() as connection:
+        existing = connection.execute(
+            "SELECT name FROM seed_versions WHERE name = ?",
+            (seed_name,),
+        ).fetchone()
+
+        if existing:
+            return
+
+        connection.execute(
+            """
+            INSERT INTO demos (title, description, location, url, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "AI Receptionist Robot",
+                "An AI receptionist that answers visitor questions and provides guidance.",
+                "Main Hall",
+                None,
+                _utc_now(),
+            ),
+        )
+
+        connection.execute(
+            """
+            INSERT INTO demos (title, description, location, url, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "Energy Management System",
+                "A demo that shows energy usage and helps monitor energy consumption.",
+                "Demo Area",
+                None,
+                _utc_now(),
+            ),
+        )
+
+        connection.execute(
+            """
+            INSERT INTO events (title, event_time, room, description, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "AI Workshop",
+                "14:00",
+                "Room 201",
+                "Workshop about artificial intelligence.",
+                _utc_now(),
+            ),
+        )
+
+        connection.execute(
+            """
+            INSERT INTO events (title, event_time, room, description, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "Robotics Workshop",
+                "15:30",
+                "Room 202",
+                "Workshop about robotics and smart technology.",
+                _utc_now(),
+            ),
+        )
+
+        connection.execute(
+            """
+            INSERT INTO seed_versions (name, applied_at)
+            VALUES (?, ?)
+            """,
+            (seed_name, _utc_now()),
+        )
+
+        connection.commit()
 
 
 @dataclass(frozen=True)
@@ -238,6 +341,110 @@ def list_feedback() -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def add_demo(
+    title: str,
+    description: str,
+    location: str,
+    url: str | None = None,
+) -> dict:
+    created_at = _utc_now()
+
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO demos (title, description, location, url, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (title, description, location, url, created_at),
+        )
+        demo_id = cursor.lastrowid
+        connection.commit()
+
+    return {
+        "id": demo_id,
+        "title": title,
+        "description": description,
+        "location": location,
+        "url": url,
+        "created_at": created_at,
+    }
+
+
+def list_demos() -> list[dict]:
+    with connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, title, description, location, url, created_at
+            FROM demos
+            ORDER BY id DESC
+            """
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def delete_demo(demo_id: int) -> bool:
+    with connect() as connection:
+        cursor = connection.execute(
+            "DELETE FROM demos WHERE id = ?",
+            (demo_id,),
+        )
+        connection.commit()
+
+    return cursor.rowcount > 0
+
+
+def add_event(
+    title: str,
+    event_time: str,
+    room: str,
+    description: str,
+) -> dict:
+    created_at = _utc_now()
+
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO events (title, event_time, room, description, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (title, event_time, room, description, created_at),
+        )
+        event_id = cursor.lastrowid
+        connection.commit()
+
+    return {
+        "id": event_id,
+        "title": title,
+        "event_time": event_time,
+        "room": room,
+        "description": description,
+        "created_at": created_at,
+    }
+
+
+def list_events() -> list[dict]:
+    with connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, title, event_time, room, description, created_at
+            FROM events
+            ORDER BY id DESC
+            """
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def delete_event(event_id: int) -> bool:
+    with connect() as connection:
+        cursor = connection.execute(
+            "DELETE FROM events WHERE id = ?",
+            (event_id,),
+        )
+        connection.commit()
+
+    return cursor.rowcount > 0
 def get_kiosk_mode() -> str:
     with connect() as connection:
         row = connection.execute(
