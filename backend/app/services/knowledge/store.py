@@ -57,6 +57,12 @@ def _init(connection: sqlite3.Connection) -> None:
             session_id TEXT,
             created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS kiosk_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            mode TEXT NOT NULL DEFAULT 'chat'
+        );
+        INSERT OR IGNORE INTO kiosk_settings (id, mode)
+        VALUES (1, 'chat');
         CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id, id);
         CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id, id);
         """
@@ -230,6 +236,24 @@ def list_feedback() -> list[dict]:
             """
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_kiosk_mode() -> str:
+    with connect() as connection:
+        row = connection.execute(
+            "SELECT mode FROM kiosk_settings WHERE id = 1"
+        ).fetchone()
+    return row["mode"] if row else "chat"
+
+
+def set_kiosk_mode(mode: str) -> str:
+    with connect() as connection:
+        connection.execute(
+            "UPDATE kiosk_settings SET mode = ? WHERE id = 1",
+            (mode,),
+        )
+        connection.commit()
+    return mode
 
 
 def file_sha256(path: Path) -> str:
