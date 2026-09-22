@@ -1,11 +1,11 @@
 import base64
 from uuid import uuid4
 
-from app.schemas.conversation import AskRequest, AskResponse, RelatedLink, SourceChunk
+from app.schemas.conversation import AskRequest, AskResponse, ContentCard, RelatedLink, SourceChunk
 from app.services.knowledge import store
 from app.services.llm.base import LlmProvider
 from app.services.llm.prompt import SYSTEM_PROMPT, build_user_prompt
-from app.services.rag.base import RagProvider
+from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
 
 
@@ -20,6 +20,55 @@ class ConversationService:
     def ask(self, payload: AskRequest) -> AskResponse:
         session_id = payload.session_id or str(uuid4())
         chunks = self._rag.search(payload.text)
+
+        question_lower = payload.text.lower()
+        matched_card: ContentCard | None = None
+
+        for demo in store.list_demos():
+            if matched_card is None and demo["title"].lower() in question_lower:
+                matched_card = ContentCard(
+                    kind="demo",
+                    title=demo["title"],
+                    description=demo["description"],
+                    location=demo["location"],
+                    url=demo["url"],
+                )
+
+                chunks.append(
+                    RetrievedChunk(
+                        source_id=f"demo-{demo['id']}",
+                        title=demo["title"],
+                        snippet=(
+                            f"Demo: {demo['description']} "
+                            f"Location: {demo['location']}."
+                        ),
+                        url=demo["url"],
+                        label=demo["title"],
+                    )
+                )
+
+        for event in store.list_events():
+            if matched_card is None and event["title"].lower() in question_lower:
+                matched_card = ContentCard(
+                    kind="event",
+                    title=event["title"],
+                    description=event["description"],
+                    event_time=event["event_time"],
+                    room=event["room"],
+                )
+
+                chunks.append(
+                    RetrievedChunk(
+                        source_id=f"event-{event['id']}",
+                        title=event["title"],
+                        snippet=(
+                            f"Event: {event['description']} "
+                            f"Time: {event['event_time']}. "
+                            f"Room: {event['room']}."
+                        ),
+                    )
+                )
+
         user_prompt = build_user_prompt(payload.text, chunks)
         answer = self._llm.generate(question=payload.text, context=chunks)
         audio = self._tts.synthesize(answer)
@@ -48,6 +97,7 @@ class ConversationService:
                 SourceChunk(source_id=c.source_id, title=c.title, snippet=c.snippet)
                 for c in chunks
             ],
+            card=matched_card,
         )
 
 

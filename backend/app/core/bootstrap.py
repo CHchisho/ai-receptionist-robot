@@ -6,6 +6,7 @@ import logging
 
 from app.core.config import settings
 from app.core.dependencies import get_llm_provider, get_rag_provider, get_stt_provider, get_tts_provider
+from app.services.knowledge import store
 from app.services.tts.piper import ensure_piper_voice
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 def bootstrap() -> None:
     """Prepare providers selected in env. Mock providers need no downloads."""
+    store.seed_demo_content()
+
     if settings.llm_provider == "ollama":
         logger.info("Preparing Ollama model '%s'", settings.ollama_model)
         llm = get_llm_provider()
