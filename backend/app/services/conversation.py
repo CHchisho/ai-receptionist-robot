@@ -1,25 +1,36 @@
 import base64
 from uuid import uuid4
 
-from app.schemas.conversation import AskRequest, AskResponse, RelatedLink, SourceChunk
+from app.schemas.conversation import AskRequest, AskResponse, NavigationRoute, RelatedLink, SourceChunk
 from app.services.knowledge import store
 from app.services.llm.base import LlmProvider
 from app.services.llm.prompt import SYSTEM_PROMPT, build_user_prompt
-from app.services.rag.base import RagProvider
+from app.services.navigation.base import Location, NavigationProvider
+from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
 
 
 class ConversationService:
     """Orchestrates question → retrieval → LLM → TTS. Voice input is transcribed first."""
 
-    def __init__(self, llm: LlmProvider, rag: RagProvider, tts: TtsProvider) -> None:
+    def __init__(
+        self,
+        llm: LlmProvider,
+        rag: RagProvider,
+        tts: TtsProvider,
+        navigation: NavigationProvider,
+    ) -> None:
         self._llm = llm
         self._rag = rag
         self._tts = tts
+        self._navigation = navigation
 
     def ask(self, payload: AskRequest) -> AskResponse:
         session_id = payload.session_id or str(uuid4())
         chunks = self._rag.search(payload.text)
+        location = self._navigation.find(payload.text)
+        if location:
+            chunks = [*chunks, _location_chunk(location)]
         user_prompt = build_user_prompt(payload.text, chunks)
         answer = self._llm.generate(question=payload.text, context=chunks)
         audio = self._tts.synthesize(answer)
@@ -48,7 +59,28 @@ class ConversationService:
                 SourceChunk(source_id=c.source_id, title=c.title, snippet=c.snippet)
                 for c in chunks
             ],
+            route=_route_from_location(location) if location else None,
         )
+
+
+def _location_chunk(location: Location) -> RetrievedChunk:
+    return RetrievedChunk(
+        source_id=f"navigation:{location.name.lower().replace(' ', '-')}",
+        title=f"Indoor navigation: {location.name}",
+        snippet=(
+            f"{location.name} is on the {location.floor}. "
+            f"Landmark: {location.landmark}. Directions: {location.directions}"
+        ),
+    )
+
+
+def _route_from_location(location: Location) -> NavigationRoute:
+    return NavigationRoute(
+        name=location.name,
+        floor=location.floor,
+        landmark=location.landmark,
+        directions=location.directions,
+    )
 
 
 def _unique_links(chunks) -> list[RelatedLink]:

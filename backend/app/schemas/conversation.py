@@ -19,12 +19,20 @@ class RelatedLink(BaseModel):
     label: str
 
 
+class NavigationRoute(BaseModel):
+    name: str
+    floor: str
+    landmark: str
+    directions: str
+
+
 class AskResponse(BaseModel):
     session_id: str
     answer: str
     audio_base64: str | None = None
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+    route: NavigationRoute | None = None
 
 
 class SpeakRequest(BaseModel):

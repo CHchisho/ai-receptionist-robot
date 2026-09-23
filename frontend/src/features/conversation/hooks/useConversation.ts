@@ -131,6 +131,7 @@ export function useConversation() {
           createdAt: new Date().toISOString(),
           links: temporaryLinks,
           audioBase64: response.audio_base64,
+          route: response.route,
         },
       ]);
 
