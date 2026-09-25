@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { HistoryPanel } from "@/features/history/HistoryPanel";
 import { SourcesPanel } from "@/features/knowledge/SourcesPanel";
+import { MapPanel } from "@/features/map/MapPanel";
 import styles from "./AdminPage.module.css";
 
 type FeedbackItem = {
@@ -13,11 +14,12 @@ type FeedbackItem = {
 };
 
 type KioskMode = "chat" | "survey";
-type AdminSection = "mode" | "sources" | "history" | "feedback";
+type AdminSection = "mode" | "sources" | "map" | "history" | "feedback";
 
 const SECTIONS: { id: AdminSection; label: string }[] = [
   { id: "mode", label: "Reception mode" },
   { id: "sources", label: "Knowledge sources" },
+  { id: "map", label: "Map" },
   { id: "history", label: "Chat history" },
   { id: "feedback", label: "Feedback" },
 ];
@@ -165,6 +167,7 @@ export function AdminPage() {
         ) : null}
 
         {section === "sources" ? <SourcesPanel /> : null}
+        {section === "map" ? <MapPanel /> : null}
         {section === "history" ? <HistoryPanel /> : null}
 
         {section === "feedback" ? (

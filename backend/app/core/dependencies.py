@@ -7,7 +7,7 @@ from app.services.knowledge import store
 from app.services.llm.base import LlmProvider
 from app.services.llm.mock import MockLlmProvider
 from app.services.navigation.base import NavigationProvider
-from app.services.navigation.mock import MockNavigationProvider
+from app.services.navigation.sqlite import SqliteNavigationProvider
 from app.services.rag.base import RagProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
@@ -86,7 +86,7 @@ def get_conversation_service() -> ConversationService:
 
 @lru_cache
 def get_navigation_provider() -> NavigationProvider:
-    return MockNavigationProvider()
+    return SqliteNavigationProvider()
 
 
 @lru_cache
