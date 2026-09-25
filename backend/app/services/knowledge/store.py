@@ -63,10 +63,23 @@ def _init(connection: sqlite3.Connection) -> None:
         );
         INSERT OR IGNORE INTO kiosk_settings (id, mode)
         VALUES (1, 'chat');
+        CREATE TABLE IF NOT EXISTS locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            floor TEXT NOT NULL,
+            landmark TEXT NOT NULL,
+            directions TEXT NOT NULL,
+            aliases_json TEXT NOT NULL,
+            sort_order INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
         CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id, id);
         CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id, id);
+        CREATE INDEX IF NOT EXISTS idx_locations_order ON locations(sort_order, id);
         """
     )
+    _seed_locations(connection)
     connection.commit()
 
 
@@ -182,6 +195,12 @@ def list_sessions(limit: int = 50) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def delete_session(session_id: str) -> None:
+    with connect() as connection:
+        connection.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+        connection.commit()
+
+
 def list_turns(session_id: str) -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
@@ -254,6 +273,167 @@ def set_kiosk_mode(mode: str) -> str:
         )
         connection.commit()
     return mode
+
+
+@dataclass(frozen=True)
+class LocationRecord:
+    id: int
+    name: str
+    floor: str
+    landmark: str
+    directions: str
+    aliases: list[str]
+    sort_order: int
+
+
+def list_locations() -> list[LocationRecord]:
+    with connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, name, floor, landmark, directions, aliases_json, sort_order
+            FROM locations
+            ORDER BY sort_order, id
+            """
+        ).fetchall()
+    return [_location_from_row(row) for row in rows]
+
+
+def get_location(location_id: int) -> LocationRecord | None:
+    with connect() as connection:
+        row = connection.execute(
+            """
+            SELECT id, name, floor, landmark, directions, aliases_json, sort_order
+            FROM locations
+            WHERE id = ?
+            """,
+            (location_id,),
+        ).fetchone()
+    return _location_from_row(row) if row else None
+
+
+def create_location(
+    name: str,
+    floor: str,
+    landmark: str,
+    directions: str,
+    aliases: list[str],
+) -> LocationRecord:
+    now = _utc_now()
+    with connect() as connection:
+        current = connection.execute("SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM locations").fetchone()
+        sort_order = int(current["max_order"]) + 1
+        cursor = connection.execute(
+            """
+            INSERT INTO locations (
+                name, floor, landmark, directions, aliases_json, sort_order, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (name, floor, landmark, directions, json.dumps(aliases), sort_order, now, now),
+        )
+        location_id = int(cursor.lastrowid)
+        connection.commit()
+    created = get_location(location_id)
+    if created is None:
+        raise RuntimeError("location was not saved")
+    return created
+
+
+def update_location(
+    location_id: int,
+    name: str,
+    floor: str,
+    landmark: str,
+    directions: str,
+    aliases: list[str],
+) -> LocationRecord | None:
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            UPDATE locations
+            SET name = ?, floor = ?, landmark = ?, directions = ?, aliases_json = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (name, floor, landmark, directions, json.dumps(aliases), _utc_now(), location_id),
+        )
+        connection.commit()
+        if cursor.rowcount == 0:
+            return None
+    return get_location(location_id)
+
+
+def delete_location(location_id: int) -> bool:
+    with connect() as connection:
+        cursor = connection.execute("DELETE FROM locations WHERE id = ?", (location_id,))
+        connection.commit()
+    return cursor.rowcount > 0
+
+
+def move_location(location_id: int, direction: str) -> LocationRecord | None:
+    items = list_locations()
+    index = next((i for i, item in enumerate(items) if item.id == location_id), None)
+    if index is None:
+        return None
+    neighbor_index = index - 1 if direction == "up" else index + 1
+    if neighbor_index < 0 or neighbor_index >= len(items):
+        return items[index]
+    current = items[index]
+    neighbor = items[neighbor_index]
+    current_order = current.sort_order
+    neighbor_order = neighbor.sort_order
+    if current_order == neighbor_order:
+        current_order = neighbor_order - 1 if direction == "up" else neighbor_order + 1
+    with connect() as connection:
+        connection.execute(
+            "UPDATE locations SET sort_order = ?, updated_at = ? WHERE id = ?",
+            (neighbor_order, _utc_now(), current.id),
+        )
+        connection.execute(
+            "UPDATE locations SET sort_order = ?, updated_at = ? WHERE id = ?",
+            (current_order, _utc_now(), neighbor.id),
+        )
+        connection.commit()
+    return get_location(location_id)
+
+
+def _seed_locations(connection: sqlite3.Connection) -> None:
+    count = connection.execute("SELECT COUNT(*) AS total FROM locations").fetchone()["total"]
+    if count:
+        return
+    from app.services.navigation.mock import DEFAULT_LOCATIONS
+
+    now = _utc_now()
+    for index, (location, aliases) in enumerate(DEFAULT_LOCATIONS):
+        connection.execute(
+            """
+            INSERT INTO locations (
+                name, floor, landmark, directions, aliases_json, sort_order, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                location.name,
+                location.floor,
+                location.landmark,
+                location.directions,
+                json.dumps(sorted(aliases)),
+                index,
+                now,
+                now,
+            ),
+        )
+
+
+def _location_from_row(row: sqlite3.Row) -> LocationRecord:
+    return LocationRecord(
+        id=row["id"],
+        name=row["name"],
+        floor=row["floor"],
+        landmark=row["landmark"],
+        directions=row["directions"],
+        aliases=json.loads(row["aliases_json"] or "[]"),
+        sort_order=row["sort_order"],
+    )
 
 
 def file_sha256(path: Path) -> str:

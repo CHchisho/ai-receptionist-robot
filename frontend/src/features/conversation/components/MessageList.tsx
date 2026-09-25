@@ -1,183 +1,111 @@
-import { useEffect, useState } from "react";
 import type { ChatMessage } from "@/features/conversation/types";
+import { LinkChip } from "@/features/qr/LinkChip";
 import { LinkifiedText } from "@/features/qr/LinkifiedText";
-import { QRPopup } from "@/features/qr/QRPopup";
-import {
-  createAudio,
-  stopActiveAudio,
-} from "@/features/voice/services/ttsClient";
+import { IconPlay, IconStop } from "@/shared/icons";
 import styles from "./MessageList.module.css";
 
 type Props = {
   messages: ChatMessage[];
   activeMessageId: string | null;
   activeProgress: number;
+  onTogglePlayback: (message: ChatMessage) => void;
 };
 
 export function MessageList({
   messages,
   activeMessageId,
   activeProgress,
+  onTogglePlayback,
 }: Props) {
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
-  const [playingMessageId, setPlayingMessageId] = useState<string | null>(
-    null,
-  );
-  const [audioProgress, setAudioProgress] = useState(0);
-
-  useEffect(() => {
-    return () => {
-      stopActiveAudio();
-      setPlayingMessageId(null);
-      setAudioProgress(0);
-    };
-  }, []);
-
-  function replayAudio(message: ChatMessage) {
-    if (!message.audioBase64) {
-      return;
-    }
-
-    stopActiveAudio();
-
-    const audio = createAudio(message.audioBase64);
-
-    setPlayingMessageId(message.id);
-    setAudioProgress(0);
-
-    audio.addEventListener("timeupdate", () => {
-      if (Number.isFinite(audio.duration) && audio.duration > 0) {
-        const progress = (audio.currentTime / audio.duration) * 100;
-        setAudioProgress(Math.min(progress, 100));
-      }
-    });
-
-    audio.addEventListener("loadedmetadata", () => {
-      setAudioProgress(0);
-    });
-
-    audio.addEventListener("ended", () => {
-      setAudioProgress(100);
-
-      setTimeout(() => {
-        setPlayingMessageId(null);
-        setAudioProgress(0);
-      }, 150);
-    });
-
-    void audio.play();
-  }
-
   return (
-    <>
-      <ol className={styles.list} aria-live="polite">
-        {messages.map((message) => {
-          const isReplayPlaying = playingMessageId === message.id;
-          const isActiveSpeaking = activeMessageId === message.id;
+    <ol className={styles.list} aria-live="polite">
+      {messages.map((message) => {
+        const isPlaying = activeMessageId === message.id;
+        const isPending = Boolean(message.pending);
+        const canPlay =
+          message.role === "assistant" &&
+          !isPending &&
+          (Boolean(message.audioBase64) || message.id === "welcome");
 
-          const isPlaying =
-            isReplayPlaying || isActiveSpeaking;
-
-          const progress = isReplayPlaying
-            ? audioProgress
-            : activeProgress;
-
-          return (
-            <li
-              key={message.id}
-              className={
-                message.role === "user"
-                  ? styles.user
+        return (
+          <li
+            key={message.id}
+            className={
+              message.role === "user"
+                ? styles.user
+                : isPending
+                  ? `${styles.assistant} ${styles.pending}`
                   : styles.assistant
+            }
+            onClick={() => {
+              if (canPlay) {
+                onTogglePlayback(message);
               }
-              onClick={() => {
-                if (
-                  message.role === "assistant" &&
-                  message.audioBase64
-                ) {
-                  replayAudio(message);
-                }
-              }}
-            >
-              <div className={styles.messageHeader}>
-                <span className={styles.role}>
-                  {message.role === "user" ? "You" : "Lena"}
+            }}
+          >
+            <div className={styles.messageHeader}>
+              <span className={styles.role}>{message.role === "user" ? "You" : "Lena"}</span>
+              <time className={styles.time}>
+                {new Date(message.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </time>
+              {canPlay ? (
+                <span className={styles.playback} aria-hidden="true">
+                  {isPlaying ? (
+                    <IconStop className={styles.playbackIcon} />
+                  ) : (
+                    <IconPlay className={styles.playbackIcon} />
+                  )}
                 </span>
+              ) : null}
+            </div>
 
-                <time className={styles.time}>
-                  {new Date(message.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </time>
-              </div>
-
+            {isPending ? (
+              <div className={styles.loader} role="status" aria-label="Lena is preparing an answer" />
+            ) : (
               <p className={styles.body}>
-                <LinkifiedText
-                  text={message.content}
-                  onLinkClick={(url) => setSelectedUrl(url)}
-                />
+                <LinkifiedText text={message.content} />
               </p>
+            )}
 
-              {message.role === "assistant" &&
-              message.links?.length ? (
+            {message.role === "assistant" && message.links?.length ? (
+              <div className={styles.links}>
+                {message.links.map((link) => (
+                  <LinkChip key={link.url} url={link.url} label={link.label} />
+                ))}
+              </div>
+            ) : null}
+
+            {message.role === "assistant" && message.route ? (
+              <section className={styles.routeCard} aria-label="Route details">
                 <div>
-                  {message.links.map((link) => (
-                    <button
-                      key={link.url}
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedUrl(link.url);
-                      }}
-                    >
-                      {link.label}
-                    </button>
-                  ))}
+                  <span className={styles.routeLabel}>Where</span>
+                  <strong>{message.route.name}</strong>
                 </div>
-              ) : null}
-
-              {message.role === "assistant" && message.route ? (
-                <section className={styles.routeCard} aria-label="Route details">
+                <div className={styles.routeGrid}>
                   <div>
-                    <span className={styles.routeLabel}>Where</span>
-                    <strong>{message.route.name}</strong>
+                    <span className={styles.routeLabel}>Floor</span>
+                    <strong>{message.route.floor}</strong>
                   </div>
-                  <div className={styles.routeGrid}>
-                    <div>
-                      <span className={styles.routeLabel}>Floor</span>
-                      <strong>{message.route.floor}</strong>
-                    </div>
-                    <div>
-                      <span className={styles.routeLabel}>Landmark</span>
-                      <strong>{message.route.landmark}</strong>
-                    </div>
+                  <div>
+                    <span className={styles.routeLabel}>Landmark</span>
+                    <strong>{message.route.landmark}</strong>
                   </div>
-                  <p>{message.route.directions}</p>
-                </section>
-              ) : null}
-
-              {message.role === "assistant" &&
-              message.audioBase64 &&
-              isPlaying ? (
-                <div className={styles.progressTrack}>
-                  <div
-                    className={styles.progressBar}
-                    style={{ width: `${progress}%` }}
-                  />
                 </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
+                <p>{message.route.directions}</p>
+              </section>
+            ) : null}
 
-      {selectedUrl ? (
-        <QRPopup
-          url={selectedUrl}
-          onClose={() => setSelectedUrl(null)}
-        />
-      ) : null}
-    </>
+            {canPlay && isPlaying ? (
+              <div className={styles.progressTrack}>
+                <div className={styles.progressBar} style={{ width: `${activeProgress}%` }} />
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
   );
 }

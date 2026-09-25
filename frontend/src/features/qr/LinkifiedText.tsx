@@ -1,32 +1,19 @@
-import styles from "./LinkifiedText.module.css";
+import { LinkChip } from "@/features/qr/LinkChip";
 
 type Props = {
   text: string;
-  onLinkClick: (url: string) => void;
 };
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
-export function LinkifiedText({ text, onLinkClick }: Props) {
+
+export function LinkifiedText({ text }: Props) {
   const parts = text.split(URL_PATTERN);
 
   return (
     <>
       {parts.map((part, index) => {
         if (part.match(/^https?:\/\//)) {
-          return (
-            <span
-              key={`${part}-${index}`}
-              className={styles.link}
-              onClick={(event) => {
-                event.stopPropagation();
-                onLinkClick(part);
-        }}
-              role="button"
-              tabIndex={0}
-            >
-              {part}
-            </span>
-          );
+          return <LinkChip key={`${part}-${index}`} url={part} label={part} />;
         }
 
         return <span key={`${part}-${index}`}>{part}</span>;

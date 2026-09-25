@@ -1,11 +1,13 @@
 from functools import lru_cache
 
 from app.core.config import settings
+from app.services.catalog import CatalogProvider, NoOpCatalogProvider, StoreCatalogProvider
 from app.services.conversation import ConversationService
+from app.services.knowledge import store
 from app.services.llm.base import LlmProvider
 from app.services.llm.mock import MockLlmProvider
 from app.services.navigation.base import NavigationProvider
-from app.services.navigation.mock import MockNavigationProvider
+from app.services.navigation.sqlite import SqliteNavigationProvider
 from app.services.rag.base import RagProvider
 from app.services.rag.mock import MockRagProvider
 from app.services.stt.base import SttProvider
@@ -78,12 +80,20 @@ def get_conversation_service() -> ConversationService:
         rag=get_rag_provider(),
         tts=get_tts_provider(),
         navigation=get_navigation_provider(),
+        catalog=get_catalog_provider(),
     )
 
 
 @lru_cache
 def get_navigation_provider() -> NavigationProvider:
-    return MockNavigationProvider()
+    return SqliteNavigationProvider()
+
+
+@lru_cache
+def get_catalog_provider() -> CatalogProvider:
+    if callable(getattr(store, "list_demos", None)) or callable(getattr(store, "list_events", None)):
+        return StoreCatalogProvider()
+    return NoOpCatalogProvider()
 
 
 @lru_cache

@@ -1,7 +1,7 @@
 from app.services.navigation.base import Location
 
 
-_LOCATIONS = [
+DEFAULT_LOCATIONS = [
     (
         Location(
             name="Main entrance",
@@ -84,7 +84,7 @@ class MockNavigationProvider:
         normalized = _normalize(query)
         if not normalized:
             return None
-        for location, aliases in _LOCATIONS:
+        for location, aliases in DEFAULT_LOCATIONS:
             if any(alias in normalized for alias in aliases):
                 return location
         return None

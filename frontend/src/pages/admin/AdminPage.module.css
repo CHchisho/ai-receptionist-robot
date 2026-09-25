@@ -1,49 +1,62 @@
 .page {
   min-height: 100vh;
-  padding: clamp(1.25rem, 4vw, 2.5rem);
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  flex-shrink: 0;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 2rem;
+  padding: 1rem 1.1rem 0.75rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.25rem;
-  color: var(--color-muted);
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.brand {
+  min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 2rem;
+  font-size: clamp(2rem, 4.5vw, 2.6rem);
+  letter-spacing: -0.03em;
 }
 
 .back {
+  flex-shrink: 0;
   color: var(--color-accent);
   font-weight: 600;
 }
 
-.grid {
-  display: grid;
-  gap: 1.25rem;
-  align-items: start;
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.side {
-  display: grid;
-  gap: 1.25rem;
+.tab,
+.tabActive {
+  flex-shrink: 0;
+  margin-bottom: -1px;
+  padding: 0.7rem 0.85rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }
 
-@media (min-width: 960px) {
-  .grid {
-    grid-template-columns: 1.1fr 0.9fr;
-  }
+.tabActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.content {
+  padding: 1.1rem 1.1rem 2rem;
 }
 
 .card {
@@ -90,6 +103,10 @@
 
 .error {
   color: var(--color-danger);
+}
+
+.modeCard {
+  max-width: 32rem;
 }
 
 .modeButtons {
