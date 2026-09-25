@@ -17,6 +17,7 @@ export type ChatMessage = {
   role: MessageRole;
   content: string;
   createdAt: string;
+  pending?: boolean;
   links?: ChatLink[];
   audioBase64?: string | null;
   route?: NavigationRoute | null;

@@ -182,6 +182,12 @@ def list_sessions(limit: int = 50) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def delete_session(session_id: str) -> None:
+    with connect() as connection:
+        connection.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+        connection.commit()
+
+
 def list_turns(session_id: str) -> list[dict]:
     with connect() as connection:
         rows = connection.execute(

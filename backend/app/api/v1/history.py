@@ -11,6 +11,12 @@ def list_sessions() -> list[HistorySessionSummary]:
     return [HistorySessionSummary(**row) for row in store.list_sessions()]
 
 
+@router.delete("/history/sessions/{session_id}")
+def delete_session(session_id: str) -> dict:
+    store.delete_session(session_id)
+    return {"ok": True}
+
+
 @router.get("/history/sessions/{session_id}", response_model=HistorySessionDetail)
 def session_detail(session_id: str) -> HistorySessionDetail:
     turns = [HistoryTurn(**row) for row in store.list_turns(session_id)]

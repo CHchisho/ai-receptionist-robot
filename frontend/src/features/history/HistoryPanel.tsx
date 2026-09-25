@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  deleteSession,
   getSession,
   listSessions,
   type HistorySession,
   type HistoryTurn,
 } from "@/features/history/api";
+import { IconEllipsisVertical } from "@/shared/icons";
 import styles from "./HistoryPanel.module.css";
 
 function formatWhen(value: string) {
@@ -26,13 +28,56 @@ export function HistoryPanel() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [turns, setTurns] = useState<HistoryTurn[]>([]);
   const [detailsId, setDetailsId] = useState<number | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     listSessions()
       .then(setSessions)
       .catch(() => setError("Could not load chat history."));
   }, []);
+
+  useEffect(() => {
+    if (!menuId) {
+      return;
+    }
+
+    function onPointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuId(null);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuId]);
+
+  async function remove(sessionId: string) {
+    setMenuId(null);
+    setError(null);
+    try {
+      await deleteSession(sessionId);
+      setSessions((current) => current.filter((item) => item.session_id !== sessionId));
+      if (openId === sessionId) {
+        setOpenId(null);
+        setTurns([]);
+        setDetailsId(null);
+      }
+    } catch {
+      setError("Could not delete this chat.");
+    }
+  }
 
   async function toggle(sessionId: string) {
     if (openId === sessionId) {
@@ -63,13 +108,42 @@ export function HistoryPanel() {
         <ul className={styles.list}>
           {sessions.map((session) => (
             <li key={session.session_id} className={styles.item}>
-              <button type="button" className={styles.session} onClick={() => void toggle(session.session_id)}>
-                <span>{session.last_question || "Chat"}</span>
-                <span className={styles.meta}>
-                  {session.turn_count} {session.turn_count === 1 ? "message" : "messages"} ·{" "}
-                  {formatWhen(session.updated_at)}
-                </span>
-              </button>
+              <div
+                className={styles.sessionRow}
+                ref={menuId === session.session_id ? menuRef : undefined}
+              >
+                <button type="button" className={styles.session} onClick={() => void toggle(session.session_id)}>
+                  <span>{session.last_question || "Chat"}</span>
+                  <span className={styles.meta}>
+                    {session.turn_count} {session.turn_count === 1 ? "message" : "messages"} ·{" "}
+                    {formatWhen(session.updated_at)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.menuButton}
+                  aria-label="Chat actions"
+                  aria-haspopup="menu"
+                  aria-expanded={menuId === session.session_id}
+                  onClick={() =>
+                    setMenuId((current) => (current === session.session_id ? null : session.session_id))
+                  }
+                >
+                  <IconEllipsisVertical className={styles.menuIcon} />
+                </button>
+                {menuId === session.session_id ? (
+                  <div className={styles.menu} role="menu">
+                    <button
+                      type="button"
+                      className={styles.menuItem}
+                      role="menuitem"
+                      onClick={() => void remove(session.session_id)}
+                    >
+                      Delete chat
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               {openId === session.session_id
                 ? turns.map((turn) => (
                   <article key={turn.id} className={styles.turn}>

@@ -9,13 +9,17 @@
 
 .user,
 .assistant {
-  max-width: min(42rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-width: min(52rem, 92%);
   padding: 1rem 1.15rem;
   border-radius: 1.1rem;
 }
 
 .user {
   align-self: flex-end;
+  min-width: 12.5rem;
   background: var(--color-accent);
   color: #fff;
 }
@@ -24,16 +28,60 @@
   align-self: flex-start;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.pending {
+  cursor: default;
+}
+
+.loader {
+  width: 60px;
+  aspect-ratio: 4;
+  background: radial-gradient(circle closest-side, #000 90%, #0000) 0 / calc(100% / 3) 100% space;
+  clip-path: inset(0 100% 0 0);
+  animation: l1 1s steps(4) infinite;
+}
+
+@keyframes l1 {
+  to {
+    clip-path: inset(0 -34% 0 0);
+  }
+}
+
+.messageHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .role {
-  display: block;
-  margin-bottom: 0.35rem;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.8;
+}
+
+.time {
+  margin-left: auto;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.playback {
+  display: flex;
+  align-items: center;
+  color: #000;
+}
+
+.user .playback {
+  color: #fff;
+}
+
+.playbackIcon {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .body {
@@ -42,10 +90,15 @@
   line-height: 1.45;
 }
 
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .progressTrack {
   width: 100%;
   height: 6px;
-  margin-top: 0.5rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--color-border);
@@ -55,25 +108,11 @@
   height: 100%;
   border-radius: 999px;
   background: var(--color-accent);
-  transition: width 0.5s linear;
-}
-
-.messageHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.time {
-  font-size: 0.7rem;
-  opacity: 0.6;
 }
 
 .routeCard {
   display: grid;
   gap: 0.75rem;
-  margin-top: 0.9rem;
   padding: 0.85rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
   border-radius: 0.7rem;
