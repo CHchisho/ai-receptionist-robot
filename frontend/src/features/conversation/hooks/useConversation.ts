@@ -15,7 +15,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hello, I am Lena. Ask me about Nokia, the Innovation Garage, or how to find your way.",
+    "Hello, I am Lena. Ask me about Nokia Espoo, the Innovation Garage, or how to find your way.",
   createdAt: new Date().toISOString(),
 };
 
@@ -114,11 +114,11 @@ export function useConversation() {
         response.links.length > 0
           ? response.links
           : [
-              {
-                url: "https://www.nokia.com/",
-                label: "Nokia website",
-              },
-            ];
+            {
+              url: "https://www.nokia.com/",
+              label: "Nokia website",
+            },
+          ];
 
       const assistantMessageId = createId();
 

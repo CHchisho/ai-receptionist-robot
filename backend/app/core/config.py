@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     sqlite_path: str = "knowledge/app.sqlite"
     rag_top_k: int = 5
     rag_score_threshold: float = 0.25
+    conversation_history_turns: int = 6
 
     @property
     def cors_origin_list(self) -> list[str]:

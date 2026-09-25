@@ -2,4 +2,9 @@ from typing import Protocol
 
 
 class LlmProvider(Protocol):
-    def generate(self, question: str, context: list) -> str: ...
+    def generate(
+        self,
+        question: str,
+        context: list,
+        history: list | None = None,
+    ) -> str: ...
