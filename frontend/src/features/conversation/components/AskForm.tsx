@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { IconArrowUp } from "@/shared/icons";
 import styles from "./AskForm.module.css";
 
 type Props = {
@@ -21,9 +22,6 @@ export function AskForm({ disabled, onAsk }: Props) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <label className={styles.label} htmlFor="question">
-        Your question
-      </label>
       <div className={styles.row}>
         <input
           id="question"
@@ -33,9 +31,10 @@ export function AskForm({ disabled, onAsk }: Props) {
           placeholder="Type a question…"
           autoComplete="off"
           disabled={disabled}
+          aria-label="Your question"
         />
-        <button className={styles.button} type="submit" disabled={disabled}>
-          Ask
+        <button className={styles.button} type="submit" disabled={disabled} aria-label="Send">
+          <IconArrowUp className={styles.sendIcon} />
         </button>
       </div>
     </form>

@@ -47,7 +47,10 @@ class OllamaLlmProvider:
             logger.info("Ollama model '%s' is already available", self._model)
             return
 
-        logger.info("Pulling Ollama model '%s' (first start can take several minutes)", self._model)
+        logger.info(
+            "Pulling Ollama model '%s' (first start can take several minutes)",
+            self._model,
+        )
         response = self._client.post(
             "/api/pull",
             json={"name": self._model, "stream": False},
@@ -61,7 +64,13 @@ class OllamaLlmProvider:
         self.wait_until_ready()
         self.ensure_model()
 
-    def generate(self, question: str, context: list, language: str) -> str:
+    def generate(
+        self,
+        question: str,
+        context: list,
+        history: list | None = None,
+        language: str = "en",
+    ) -> str:
         response = self._client.post(
             "/api/chat",
             json={
@@ -71,9 +80,12 @@ class OllamaLlmProvider:
                     {
                         "role": "system",
                         "content": f"{SYSTEM_PROMPT}\nVisitor language: {language}",
-                },
-                {"role": "user", "content": build_user_prompt(question, context)},
-            ],
+                    },
+                    {
+                        "role": "user",
+                        "content": build_user_prompt(question, context, history),
+                    },
+                ],
             },
         )
         response.raise_for_status()

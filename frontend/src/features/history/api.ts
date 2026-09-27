@@ -33,3 +33,10 @@ export function getSession(sessionId: string) {
     `/api/v1/history/sessions/${encodeURIComponent(sessionId)}`,
   );
 }
+
+export function deleteSession(sessionId: string) {
+  return http<{ ok: boolean }>(
+    `/api/v1/history/sessions/${encodeURIComponent(sessionId)}`,
+    { method: "DELETE" },
+  );
+}
