@@ -29,7 +29,8 @@ class Settings(BaseSettings):
     whisper_device: str = "cpu"
     whisper_compute_type: str = "int8"
 
-    piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
+    piper_model_path_en: str = "backend/en_US-lessac-medium.onnx"
+    piper_model_path_fi: str = "backend/fi_FI-harri-medium.onnx"
 
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_collection: str = "lena_knowledge"

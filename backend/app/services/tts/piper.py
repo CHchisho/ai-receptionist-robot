@@ -34,16 +34,21 @@ def ensure_piper_voice(model_path: str) -> Path:
 class PiperTtsProvider:
     """Synthesizes speech locally using Piper.
 
-    The voice model is loaded once and reused for every request.
+    The voice models are loaded once and reused for every request.
     """
 
-    def __init__(self, model_path: str) -> None:
-        from piper import PiperVoice  # imported lazily so mock mode needs no model deps
+    def __init__(self, model_path_en: str, model_path_fi: str) -> None:
+        from piper import PiperVoice
 
-        self._voice = PiperVoice.load(model_path)
+        self._voices = {
+            "en": PiperVoice.load(model_path_en),
+            "fi": PiperVoice.load(model_path_fi),
+        }
 
-    def synthesize(self, text: str) -> bytes:
+    def synthesize(self, text: str, language: str) -> bytes:
+        voice = self._voices.get(language, self._voices["en"])
+
         buffer = io.BytesIO()
         with wave.open(buffer, "wb") as wav_file:
-            self._voice.synthesize_wav(text, wav_file)
+            voice.synthesize_wav(text, wav_file)
         return buffer.getvalue()

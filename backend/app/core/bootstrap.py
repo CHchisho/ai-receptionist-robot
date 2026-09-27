@@ -21,8 +21,18 @@ def bootstrap() -> None:
             ensure_ready()
 
     if settings.tts_provider == "piper":
-        logger.info("Preparing Piper voice at %s", settings.piper_model_path)
-        ensure_piper_voice(settings.piper_model_path)
+        logger.info(
+            "Preparing Piper English voice at %s",
+            settings.piper_model_path_en,
+        )
+        ensure_piper_voice(settings.piper_model_path_en)
+
+        logger.info(
+            "Preparing Piper Finnish voice at %s",
+            settings.piper_model_path_fi,
+        )
+        ensure_piper_voice(settings.piper_model_path_fi)
+
         get_tts_provider()
 
     if settings.stt_provider == "whisper":

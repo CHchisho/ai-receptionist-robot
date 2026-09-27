@@ -81,7 +81,7 @@ export function useConversation() {
     }
   }
 
-  async function ask(text: string) {
+  async function ask(text: string, language = "en") {
     const question = text.trim();
 
     if (
@@ -106,7 +106,11 @@ export function useConversation() {
     ]);
 
     try {
-      const response = await askQuestion(question, sessionId);
+      const response = await askQuestion(
+        question,
+        sessionId,
+        language,
+      );
 
       setSessionId(response.session_id);
 

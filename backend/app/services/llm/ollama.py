@@ -61,16 +61,19 @@ class OllamaLlmProvider:
         self.wait_until_ready()
         self.ensure_model()
 
-    def generate(self, question: str, context: list) -> str:
+    def generate(self, question: str, context: list, language: str) -> str:
         response = self._client.post(
             "/api/chat",
             json={
                 "model": self._model,
                 "stream": False,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": build_user_prompt(question, context)},
-                ],
+                    {
+                        "role": "system",
+                        "content": f"{SYSTEM_PROMPT}\nVisitor language: {language}",
+                },
+                {"role": "user", "content": build_user_prompt(question, context)},
+            ],
             },
         )
         response.raise_for_status()

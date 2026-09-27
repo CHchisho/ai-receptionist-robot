@@ -11,11 +11,25 @@ type ChatPanelProps = {
 
 export function ChatPanel({ conversation }: ChatPanelProps) {
   const {
-  messages,status,error,ask,stopSpeaking,speakWelcomeOnce,welcomeSpoken,playingMessageId,audioProgress,
-} = conversation;
+    messages,
+    status,
+    error,
+    ask,
+    stopSpeaking,
+    speakWelcomeOnce,
+    welcomeSpoken,
+    playingMessageId,
+    audioProgress,
+  } = conversation;
+
   const [showTypeForm, setShowTypeForm] = useState(false);
   const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
-  const [recordingState, setRecordingState] = useState<"idle" | "recording" | "processing">("idle");
+  const [recordingState, setRecordingState] = useState<
+    "idle" | "recording" | "processing"
+  >("idle");
+
+  const [currentLanguage, setCurrentLanguage] = useState<string>("en");
+
   const busy = status === "processing" || status === "speaking";
   const isSpeaking = status === "speaking";
   const isStartingWelcome = !welcomeSpoken && status === "processing";
@@ -26,20 +40,25 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
   useEffect(() => {
     const node = messagesRef.current;
     if (!node) return;
+
     node.scrollTop = node.scrollHeight;
   }, [messages, status]);
 
-  function handleTranscribed(text: string) {
+  function handleTranscribed(text: string, language: string) {
     setVoiceNotice(null);
-    ask(text);
+    setCurrentLanguage(language);
+    ask(text, language);
   }
 
   function handleEmptyTranscription() {
     setVoiceNotice("I didn't catch that, please try again");
   }
 
-  function handleRecordingStateChange(nextState: "idle" | "recording" | "processing") {
+  function handleRecordingStateChange(
+    nextState: "idle" | "recording" | "processing",
+  ) {
     setRecordingState(nextState);
+
     if (nextState === "recording") {
       setVoiceNotice(null);
     }
@@ -55,17 +74,44 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
             activeProgress={audioProgress}
           />
         </div>
-        <div className={`${styles.recordOverlay} ${isListening ? styles.listeningOverlay : ""}`}>
+
+        <div
+          className={`${styles.recordOverlay} ${
+            isListening ? styles.listeningOverlay : ""
+          }`}
+        >
           {error ? <p className={styles.error}>{error}</p> : null}
-          {voiceNotice ? <p className={styles.notice}>{voiceNotice}</p> : null}
-          {isStartingWelcome ? <p className={styles.status}>Starting Lena…</p> : null}
-          {status === "processing" && welcomeSpoken ? <p className={styles.status}>Thinking…</p> : null}
-          {isSpeaking ? <p className={styles.status}>Lena is speaking</p> : null}
+
+          {voiceNotice ? (
+            <p className={styles.notice}>{voiceNotice}</p>
+          ) : null}
+
+          <p className={styles.status}>
+            Language: {currentLanguage.toUpperCase()}
+          </p>
+
+          {isStartingWelcome ? (
+            <p className={styles.status}>Starting Lena…</p>
+          ) : null}
+
+          {status === "processing" && welcomeSpoken ? (
+            <p className={styles.status}>Thinking…</p>
+          ) : null}
+
           {isSpeaking ? (
-            <button className={styles.stopButton} type="button" onClick={stopSpeaking}>
+            <p className={styles.status}>Lena is speaking</p>
+          ) : null}
+
+          {isSpeaking ? (
+            <button
+              className={styles.stopButton}
+              type="button"
+              onClick={stopSpeaking}
+            >
               Stop
             </button>
           ) : null}
+
           {!welcomeSpoken ? (
             <button
               className={styles.welcomeMicButton}
@@ -75,7 +121,9 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
               aria-label="Start Lena"
             >
               <span className={styles.welcomeMicIcon} aria-hidden="true" />
-              <span className={styles.welcomeMicText}>{isStartingWelcome ? "Starting…" : "Tap to start"}</span>
+              <span className={styles.welcomeMicText}>
+                {isStartingWelcome ? "Starting…" : "Tap to start"}
+              </span>
             </button>
           ) : (
             <RecordButton
@@ -87,10 +135,16 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
           )}
         </div>
       </div>
+
       {welcomeSpoken ? (
         <div className={styles.typeArea}>
           {!showTypeForm ? (
-            <button className={styles.typeToggle} type="button" onClick={() => setShowTypeForm(true)} disabled={typeDisabled}>
+            <button
+              className={styles.typeToggle}
+              type="button"
+              onClick={() => setShowTypeForm(true)}
+              disabled={typeDisabled}
+            >
               Type instead
             </button>
           ) : (
