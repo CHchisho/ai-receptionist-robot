@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import conversation, demos_events, feedback, health, history, knowledge, kiosk
+from app.api.v1 import conversation, demos_events, feedback, health, history, knowledge, kiosk, navigation
 
 router = APIRouter()
 router.include_router(health.router, tags=["health"])
@@ -10,3 +10,4 @@ router.include_router(history.router, tags=["history"])
 router.include_router(feedback.router, tags=["feedback"])
 router.include_router(demos_events.router, tags=["demos-events"])
 router.include_router(kiosk.router, tags=["kiosk"])
+router.include_router(navigation.router, tags=["navigation"])

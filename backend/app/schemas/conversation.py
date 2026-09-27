@@ -19,6 +19,13 @@ class RelatedLink(BaseModel):
     label: str
 
 
+class NavigationRoute(BaseModel):
+    name: str
+    floor: str
+    landmark: str
+    directions: str
+
+
 class ContentCard(BaseModel):
     kind: str
     title: str
@@ -35,6 +42,7 @@ class AskResponse(BaseModel):
     audio_base64: str | None = None
     links: list[RelatedLink] = []
     sources: list[SourceChunk] = []
+    route: NavigationRoute | None = None
     card: ContentCard | None = None
 
 

@@ -60,13 +60,6 @@ export function RecordButton({ disabled, onTranscribed, onEmptyTranscription, on
   }
 
   const isRecording = state === "recording";
-  const hint = disabled && state === "idle"
-    ? "Mic paused"
-    : isRecording
-      ? "Listening"
-      : state === "processing"
-        ? "Understanding…"
-        : "Tap to speak";
 
   return (
     <div className={styles.wrapper}>
@@ -78,10 +71,9 @@ export function RecordButton({ disabled, onTranscribed, onEmptyTranscription, on
         aria-pressed={isRecording}
         aria-label={isRecording ? "Stop recording" : "Start voice recording"}
       >
+        <span className={styles.pulse} aria-hidden="true" />
         <span className={styles.icon} aria-hidden="true" />
       </button>
-      <p className={styles.hint}>{hint}</p>
-      {isRecording ? <p className={styles.subhint}>Tap again when you are done</p> : null}
       {error ? <p className={styles.error}>{error}</p> : null}
     </div>
   );

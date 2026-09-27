@@ -35,11 +35,18 @@ class Settings(BaseSettings):
     qdrant_collection: str = "lena_knowledge"
     ollama_embed_model: str = "nomic-embed-text"
     knowledge_documents_dir: str = "knowledge/documents"
-    knowledge_urls: str = ""
+    # Initial approved pages
+    knowledge_urls: str = (
+        "https://en.wikipedia.org/wiki/Nokia,"
+        "https://www.nokia.com/innovation/veturi-programs/,"
+        "https://www.nokia.com/innovate-with-nokia/nokia-garages/,"
+        "https://www.nokia.com/innovate-with-nokia/nokia-garages/oulu-garage/"
+    )
     knowledge_refresh: bool = False
     sqlite_path: str = "knowledge/app.sqlite"
     rag_top_k: int = 5
     rag_score_threshold: float = 0.25
+    conversation_history_turns: int = 6
 
     @property
     def cors_origin_list(self) -> list[str]:

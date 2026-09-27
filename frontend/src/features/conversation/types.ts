@@ -5,13 +5,22 @@ export type ChatLink = {
   label: string;
 };
 
+export type NavigationRoute = {
+  name: string;
+  floor: string;
+  landmark: string;
+  directions: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: MessageRole;
   content: string;
   createdAt: string;
+  pending?: boolean;
   links?: ChatLink[];
   audioBase64?: string | null;
+  route?: NavigationRoute | null;
   card?: ContentCard | null;
 };
 
@@ -32,4 +41,5 @@ export type AskResponse = {
   links: ChatLink[];
   sources: { source_id: string; title: string; snippet: string }[];
   card: ContentCard | null;
+  route: NavigationRoute | null;
 };
