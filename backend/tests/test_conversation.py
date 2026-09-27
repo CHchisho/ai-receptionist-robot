@@ -112,7 +112,7 @@ def test_ask_prefers_navigation_over_rag() -> None:
 
 def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
     class FakeTtsProvider:
-        def synthesize(self, text: str) -> bytes:
+        def synthesize(self, text: str, language: str) -> bytes:
             return b"fake-audio-bytes"
 
     result = _service(tts=FakeTtsProvider()).ask(AskRequest(text="Where is the kitchen?"))
@@ -217,7 +217,7 @@ def test_empty_rag_snippet_is_not_a_fact() -> None:
 
 def test_speak_endpoint_returns_base64_audio() -> None:
     class FakeTtsProvider:
-        def synthesize(self, text: str) -> bytes:
+        def synthesize(self, text: str, language: str) -> bytes:
             return b"welcome-audio"
 
     application = create_app()
@@ -228,3 +228,80 @@ def test_speak_endpoint_returns_base64_audio() -> None:
 
     assert response.status_code == 200
     assert response.json()["audio_base64"] == "d2VsY29tZS1hdWRpbw=="
+
+def test_ask_uses_finnish_for_llm_and_tts() -> None:
+    class RecordingLlmProvider:
+        def __init__(self) -> None:
+            self.language = None
+
+        def generate(self, question: str, context: list, language: str) -> str:
+            self.language = language
+            return "Finnish answer"
+
+    class RecordingTtsProvider:
+        def __init__(self) -> None:
+            self.language = None
+
+        def synthesize(self, text: str, language: str) -> bytes:
+            self.language = language
+            return b"finnish-audio"
+
+    llm = RecordingLlmProvider()
+    tts = RecordingTtsProvider()
+
+    service = ConversationService(
+        llm=llm,
+        rag=MockRagProvider(),
+        tts=tts,
+    )
+
+    result = service.ask(
+        AskRequest(
+            text="Mikä Nokia on?",
+            language="fi",
+        )
+    )
+
+    assert llm.language == "fi"
+    assert tts.language == "fi"
+    assert result.answer == "Finnish answer"
+
+
+def test_ask_falls_back_to_english_for_unsupported_language() -> None:
+    class RecordingLlmProvider:
+        def __init__(self) -> None:
+            self.language = None
+
+        def generate(self, question: str, context: list, language: str) -> str:
+            self.language = language
+            return "English answer"
+
+    class RecordingTtsProvider:
+        def __init__(self) -> None:
+            self.language = None
+
+        def synthesize(self, text: str, language: str) -> bytes:
+            self.language = language
+            return b"english-audio"
+
+    llm = RecordingLlmProvider()
+    tts = RecordingTtsProvider()
+
+    service = ConversationService(
+        llm=llm,
+        rag=MockRagProvider(),
+        tts=tts,
+    )
+
+    result = service.ask(
+        AskRequest(
+            text="Was ist Nokia?",
+            language="de",
+        )
+    )
+
+    assert llm.language == "en"
+    assert tts.language == "en"
+    assert result.answer.startswith(
+        "I can currently respond in English or Finnish."
+    )    

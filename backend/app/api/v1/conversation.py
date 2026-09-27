@@ -25,7 +25,7 @@ def speak(
     payload: SpeakRequest,
     tts: TtsProvider = Depends(get_tts_provider),
 ) -> SpeakResponse:
-    audio = tts.synthesize(payload.text)
+    audio = tts.synthesize(payload.text, language=payload.language)
     return SpeakResponse(
         audio_base64=base64.b64encode(audio).decode("ascii") if audio else None,
     )
@@ -37,5 +37,8 @@ async def transcribe(
     stt: SttProvider = Depends(get_stt_provider),
 ) -> TranscribeResponse:
     audio = await file.read()
-    text = stt.transcribe(audio)
-    return TranscribeResponse(text=text)
+    result = stt.transcribe(audio)
+    return TranscribeResponse(
+        text=result.text,
+        language=result.language,
+    )

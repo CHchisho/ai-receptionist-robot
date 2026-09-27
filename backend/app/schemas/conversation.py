@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class AskRequest(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     session_id: str | None = None
+    language: str = "en"
 
 
 class SourceChunk(BaseModel):
@@ -48,6 +49,7 @@ class AskResponse(BaseModel):
 
 class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
+    language: str = "en"
 
 
 class SpeakResponse(BaseModel):
@@ -56,6 +58,7 @@ class SpeakResponse(BaseModel):
 
 class TranscribeResponse(BaseModel):
     text: str
+    language: str
 
 
 class HistorySessionSummary(BaseModel):
