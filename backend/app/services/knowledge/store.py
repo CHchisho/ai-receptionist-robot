@@ -413,6 +413,40 @@ def delete_demo(demo_id: int) -> bool:
     return cursor.rowcount > 0
 
 
+def update_demo(
+    demo_id: int,
+    title: str,
+    description: str,
+    location: str,
+    url: str | None = None,
+) -> dict | None:
+    with connect() as connection:
+        existing = connection.execute(
+            "SELECT id FROM demos WHERE id = ?",
+            (demo_id,),
+        ).fetchone()
+        if existing is None:
+            return None
+        connection.execute(
+            """
+            UPDATE demos
+            SET title = ?, description = ?, location = ?, url = ?
+            WHERE id = ?
+            """,
+            (title, description, location, url, demo_id),
+        )
+        connection.commit()
+        row = connection.execute(
+            """
+            SELECT id, title, description, location, url, created_at
+            FROM demos
+            WHERE id = ?
+            """,
+            (demo_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def add_event(
     title: str,
     event_time: str,
@@ -464,6 +498,42 @@ def delete_event(event_id: int) -> bool:
         connection.commit()
 
     return cursor.rowcount > 0
+
+
+def update_event(
+    event_id: int,
+    title: str,
+    event_time: str,
+    room: str,
+    description: str,
+) -> dict | None:
+    with connect() as connection:
+        existing = connection.execute(
+            "SELECT id FROM events WHERE id = ?",
+            (event_id,),
+        ).fetchone()
+        if existing is None:
+            return None
+        connection.execute(
+            """
+            UPDATE events
+            SET title = ?, event_time = ?, room = ?, description = ?
+            WHERE id = ?
+            """,
+            (title, event_time, room, description, event_id),
+        )
+        connection.commit()
+        row = connection.execute(
+            """
+            SELECT id, title, event_time, room, description, created_at
+            FROM events
+            WHERE id = ?
+            """,
+            (event_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def get_kiosk_mode() -> str:
     with connect() as connection:
         row = connection.execute(
