@@ -16,10 +16,16 @@ def test_synthesize_returns_wav_bytes() -> None:
     fake_voice.synthesize_wav.side_effect = _fake_synthesize_wav
 
     with patch("piper.PiperVoice.load", return_value=fake_voice) as load:
-        provider = PiperTtsProvider(model_path="/models/voice.onnx")
-        load.assert_called_once_with("/models/voice.onnx")
+        provider = PiperTtsProvider(
+            model_path_en="/models/en_voice.onnx",
+            model_path_fi="/models/fi_voice.onnx",
+        )
 
-        audio = provider.synthesize("Hello there")
+        assert load.call_count == 2
+        load.assert_any_call("/models/en_voice.onnx")
+        load.assert_any_call("/models/fi_voice.onnx")
+
+        audio = provider.synthesize("Hello there", language="en")
 
     fake_voice.synthesize_wav.assert_called_once()
     assert audio.startswith(b"RIFF")

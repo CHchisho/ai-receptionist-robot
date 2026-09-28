@@ -19,6 +19,8 @@ from app.services.navigation.base import Location, NavigationProvider
 from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
 
+SUPPORTED_LANGUAGES = {"en", "fi"}
+
 _REFERENTIAL = re.compile(
     r"\b(there|that|it|here|them)\b|"
     r"^(and\b|what about\b|how about\b|how do i get\b)",
@@ -44,6 +46,12 @@ class ConversationService:
         self._catalog = catalog or NoOpCatalogProvider()
 
     def ask(self, payload: AskRequest) -> AskResponse:
+        language = payload.language.lower()
+        unsupported_language = language not in SUPPORTED_LANGUAGES
+
+        if unsupported_language:
+            language = "en"
+
         session_id = payload.session_id or str(uuid4())
         history = store.list_turns(session_id)[-settings.conversation_history_turns :]
 
@@ -58,9 +66,20 @@ class ConversationService:
                 question=payload.text,
                 context=chunks,
                 history=history,
+                language=language,
             )
 
-        audio = self._tts.synthesize(answer)
+        if unsupported_language:
+            answer = (
+                "I can currently respond in English or Finnish. "
+                f"I'll answer in English. {answer}"
+            )
+
+        audio = self._tts.synthesize(
+            answer,
+            language=language,
+        )
+
         store.save_turn(
             session_id=session_id,
             question=payload.text,
@@ -77,13 +96,18 @@ class ConversationService:
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
         )
+
         return AskResponse(
             session_id=session_id,
             answer=answer,
             audio_base64=base64.b64encode(audio).decode("ascii") if audio else None,
             links=_unique_links(chunks),
             sources=[
-                SourceChunk(source_id=c.source_id, title=c.title, snippet=c.snippet)
+                SourceChunk(
+                    source_id=c.source_id,
+                    title=c.title,
+                    snippet=c.snippet,
+                )
                 for c in chunks
             ],
             route=_route_from_location(location) if location else None,
@@ -206,5 +230,10 @@ def _unique_links(chunks) -> list[RelatedLink]:
         if not url or url in seen:
             continue
         seen.add(url)
-        links.append(RelatedLink(url=url, label=getattr(chunk, "label", None) or chunk.title))
+        links.append(
+            RelatedLink(
+                url=url,
+                label=getattr(chunk, "label", None) or chunk.title,
+            )
+        )
     return links

@@ -7,4 +7,5 @@ class LlmProvider(Protocol):
         question: str,
         context: list,
         history: list | None = None,
+        language: str = "en",
     ) -> str: ...
