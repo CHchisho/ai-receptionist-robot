@@ -18,8 +18,21 @@ class RecordingLlm:
     def __init__(self) -> None:
         self.calls: list[dict] = []
 
-    def generate(self, question: str, context: list, history: list | None = None) -> str:
-        self.calls.append({"question": question, "context": context, "history": history or []})
+    def generate(
+        self,
+        question: str,
+        context: list,
+        history: list | None = None,
+        language: str = "en",
+    ) -> str:
+        self.calls.append(
+            {
+                "question": question,
+                "context": context,
+                "history": history or [],
+                "language": language,
+            }
+        )
         return "AI answer"
 
 
@@ -234,7 +247,7 @@ def test_ask_uses_finnish_for_llm_and_tts() -> None:
         def __init__(self) -> None:
             self.language = None
 
-        def generate(self, question: str, context: list, language: str) -> str:
+        def generate(self, question: str, context: list, history: list | None = None, language: str = "en") -> str:
             self.language = language
             return "Finnish answer"
 
@@ -251,8 +264,17 @@ def test_ask_uses_finnish_for_llm_and_tts() -> None:
 
     service = ConversationService(
         llm=llm,
-        rag=MockRagProvider(),
+        rag=FakeRag(
+            [
+                RetrievedChunk(
+                    source_id="nokia",
+                    title="Nokia",
+                    snippet="Nokia is a Finnish telecommunications company.",
+                )
+            ]
+    ),
         tts=tts,
+        navigation=MockNavigationProvider(),
     )
 
     result = service.ask(
@@ -272,7 +294,7 @@ def test_ask_falls_back_to_english_for_unsupported_language() -> None:
         def __init__(self) -> None:
             self.language = None
 
-        def generate(self, question: str, context: list, language: str) -> str:
+        def generate(self, question: str, context: list, history: list | None = None, language: str = "en") -> str:
             self.language = language
             return "English answer"
 
@@ -289,8 +311,17 @@ def test_ask_falls_back_to_english_for_unsupported_language() -> None:
 
     service = ConversationService(
         llm=llm,
-        rag=MockRagProvider(),
+        rag=FakeRag(
+        [
+            RetrievedChunk(
+                source_id="nokia",
+                title="Nokia",
+                snippet="Nokia is a Finnish telecommunications company.",
+            )
+        ]
+    ),
         tts=tts,
+        navigation=MockNavigationProvider(),
     )
 
     result = service.ask(
