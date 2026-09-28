@@ -18,5 +18,22 @@ def test_transcribe_joins_segment_text() -> None:
 
         result = provider.transcribe(b"fake-audio-bytes")
 
+    fake_model.transcribe.assert_called_once()
+    assert "language" not in fake_model.transcribe.call_args.kwargs
     assert result.text == "Hello world"
     assert result.language == "en"
+
+
+def test_transcribe_returns_detected_finnish() -> None:
+    fake_model = MagicMock()
+    fake_model.transcribe.return_value = (
+        [MagicMock(text="Hei")],
+        MagicMock(language="fi"),
+    )
+
+    with patch("faster_whisper.WhisperModel", return_value=fake_model):
+        result = WhisperSttProvider().transcribe(b"fake-audio-bytes")
+
+    assert fake_model.transcribe.call_count == 1
+    assert result.text == "Hei"
+    assert result.language == "fi"

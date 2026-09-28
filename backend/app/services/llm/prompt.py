@@ -4,6 +4,11 @@ UNKNOWN_ANSWER = (
     "I don't know. I don't have information about that."
 )
 
+UNKNOWN_BY_LANGUAGE = {
+    "en": UNKNOWN_ANSWER,
+    "fi": "En tiedä. Minulla ei ole siitä tietoa.",
+}
+
 SYSTEM_PROMPT = """You are Lena, a friendly receptionist at Nokia Espoo Innovation Garage.
 
 Reply briefly and clearly in 1–4 sentences. Speak the visitor's language when possible.

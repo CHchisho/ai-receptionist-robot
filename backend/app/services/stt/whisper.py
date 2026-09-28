@@ -32,47 +32,11 @@ class WhisperSttProvider:
             with os.fdopen(fd, "wb") as tmp:
                 tmp.write(audio)
 
-            results = {}
+            segments, info = self._model.transcribe(path)
+            text = " ".join(segment.text.strip() for segment in segments).strip()
+            detected = getattr(info, "language", None) or "en"
+            language = str(detected).lower().split("-", 1)[0].split("_", 1)[0]
 
-            for language in ("en", "fi"):
-                segments, info = self._model.transcribe(
-                    path,
-                    language=language,
-                    task="transcribe",
-                )
-
-                segment_list = list(segments)
-                text = " ".join(
-                    segment.text.strip() for segment in segment_list
-                ).strip()
-
-                avg_logprob = (
-                    sum(segment.avg_logprob for segment in segment_list)
-                    / len(segment_list)
-                    if segment_list
-                    else float("-inf")
-                )
-
-                results[language] = {
-                    "text": text,
-                    "avg_logprob": avg_logprob,
-                }
-
-                print(
-                    f"Whisper {language}: "
-                    f"logprob={avg_logprob}, text={text!r}"
-                )
-
-            detected_language = max(
-                results,
-                key=lambda language: results[language]["avg_logprob"],
-            )
-
-            print(f"Whisper selected language: {detected_language}")
-
-            return SttResult(
-                text=results[detected_language]["text"],
-                language=detected_language,
-            )
+            return SttResult(text=text, language=language or "en")
         finally:
             os.remove(path)

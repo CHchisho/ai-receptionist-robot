@@ -26,7 +26,7 @@ On Windows, polling is enabled so edits are picked up inside Docker Desktop.
 
 ### Settings
 
-All configuration lives in the project-root `.env` (see `.env.example`). Docker Compose, the FastAPI backend, and Vite read that file. Compose only overrides hostnames and model paths that differ inside containers (`OLLAMA_BASE_URL`, `QDRANT_URL`, `PIPER_MODEL_PATH`, Vite proxy target).
+All configuration lives in the project-root `.env` (see `.env.example`). Docker Compose, the FastAPI backend, and Vite read that file. Compose only overrides hostnames and model paths that differ inside containers (`OLLAMA_BASE_URL`, `QDRANT_URL`, `PIPER_MODEL_PATH`, `PIPER_MODEL_PATH_FI`, Vite proxy target).
 
 ## Local start without Docker
 
@@ -52,7 +52,7 @@ Set `LLM_PROVIDER=ollama` and install [Ollama](https://ollama.com) locally. On A
 
 #### TTS_PROVIDER=piper
 
-`TTS_PROVIDER=mock` needs nothing extra. For real speech set `TTS_PROVIDER=piper` and `PIPER_MODEL_PATH`. Missing `.onnx` / `.onnx.json` files are downloaded on startup (`en_US-lessac-medium` from the path file name).
+`TTS_PROVIDER=mock` needs nothing extra. For real speech set `TTS_PROVIDER=piper`, `PIPER_MODEL_PATH` (English) and `PIPER_MODEL_PATH_FI` (Finnish). Missing `.onnx` / `.onnx.json` files are downloaded on startup from each path's file name (`en_US-lessac-medium`, `fi_FI-harri-medium`). Both voices stay in the same Piper directory.
 
 ### Frontend
 

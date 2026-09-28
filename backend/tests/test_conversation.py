@@ -335,4 +335,21 @@ def test_ask_falls_back_to_english_for_unsupported_language() -> None:
     assert tts.language == "en"
     assert result.answer.startswith(
         "I can currently respond in English or Finnish."
-    )    
+    )
+
+
+def test_ask_refuses_in_finnish_when_no_verified_facts() -> None:
+    class RecordingTtsProvider:
+        def __init__(self) -> None:
+            self.language = None
+
+        def synthesize(self, text: str, language: str) -> bytes:
+            self.language = language
+            return b""
+
+    tts = RecordingTtsProvider()
+    result = _service(tts=tts).ask(AskRequest(text="Mikä on salasana?", language="fi"))
+
+    assert result.answer == "En tiedä. Minulla ei ole siitä tietoa."
+    assert tts.language == "fi"
+    assert "I don't know" not in result.answer 

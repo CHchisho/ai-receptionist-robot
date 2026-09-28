@@ -14,7 +14,7 @@ from app.schemas.conversation import (
 from app.services.catalog import CatalogHit, CatalogProvider, NoOpCatalogProvider
 from app.services.knowledge import store
 from app.services.llm.base import LlmProvider
-from app.services.llm.prompt import SYSTEM_PROMPT, UNKNOWN_ANSWER, build_user_prompt
+from app.services.llm.prompt import SYSTEM_PROMPT, UNKNOWN_BY_LANGUAGE, build_user_prompt
 from app.services.navigation.base import Location, NavigationProvider
 from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
@@ -58,7 +58,7 @@ class ConversationService:
         location, catalog_hit, chunks = self._route(payload.text, history)
 
         if not chunks:
-            answer = UNKNOWN_ANSWER
+            answer = UNKNOWN_BY_LANGUAGE[language]
             user_prompt = build_user_prompt(payload.text, [], history)
         else:
             user_prompt = build_user_prompt(payload.text, chunks, history)

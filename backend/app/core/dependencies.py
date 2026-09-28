@@ -26,7 +26,7 @@ def get_tts_provider() -> TtsProvider:
         from app.services.tts.piper import PiperTtsProvider  # imported lazily so mock mode needs no model deps
 
         return PiperTtsProvider(
-            model_path_en=settings.piper_model_path_en,
+            model_path_en=settings.piper_model_path,
             model_path_fi=settings.piper_model_path_fi,
         )
     if settings.tts_provider != "mock":

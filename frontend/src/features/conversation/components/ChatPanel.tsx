@@ -15,7 +15,6 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
     status,
     error,
     ask,
-    stopSpeaking,
     speakWelcomeOnce,
     welcomeSpoken,
     playingMessageId,
@@ -31,7 +30,6 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
   const [currentLanguage, setCurrentLanguage] = useState<string>("en");
 
   const busy = status === "processing" || status === "speaking";
-  const isSpeaking = status === "speaking";
   const isStartingWelcome = !welcomeSpoken && status === "processing";
   const isListening = recordingState === "recording";
   const typeDisabled = busy || recordingState !== "idle";
@@ -76,7 +74,7 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
     : recordingState === "processing" ||
         status === "processing" ||
         isStartingWelcome
-      ? "Thinking..."
+      ? "Thinking…"
       : "Tap to speak";
 
   return (
@@ -101,23 +99,6 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
           <p className={styles.notice}>{voiceNotice}</p>
         ) : null}
 
-        <p className={styles.status}>
-          Language: {currentLanguage.toUpperCase()}
-        </p>
-
-        {isSpeaking ? (
-          <>
-            <p className={styles.status}>Lena is speaking</p>
-            <button
-              className={styles.stopButton}
-              type="button"
-              onClick={stopSpeaking}
-            >
-              Stop
-            </button>
-          </>
-        ) : null}
-
         {!welcomeSpoken ? (
           <button
             className={styles.welcomeMicButton}
@@ -128,7 +109,7 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
           >
             <span className={styles.welcomeMicIcon} aria-hidden="true" />
             <span className={styles.welcomeMicText}>
-              {isStartingWelcome ? "Starting..." : "Tap to start"}
+              {isStartingWelcome ? "Starting…" : "Tap to start"}
             </span>
           </button>
         ) : showTypeForm ? (
