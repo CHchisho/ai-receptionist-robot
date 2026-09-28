@@ -70,6 +70,21 @@ export function MessageList({
               </p>
             )}
 
+            {message.role === "assistant" && message.card ? (
+              <div className={styles.contentCard}>
+                <strong>{message.card.title}</strong>
+                <p>{message.card.description}</p>
+                {message.card.kind === "demo" && message.card.location ? (
+                  <span>Location: {message.card.location}</span>
+                ) : null}
+                {message.card.kind === "event" ? (
+                  <span>
+                    {message.card.event_time} · {message.card.room}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+
             {message.role === "assistant" && message.links?.length ? (
               <div className={styles.links}>
                 {message.links.map((link) => (

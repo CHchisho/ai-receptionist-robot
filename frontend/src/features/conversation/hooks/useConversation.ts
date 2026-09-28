@@ -1,9 +1,6 @@
 import { useRef, useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
-import type {
-  ChatLink,
-  ChatMessage,
-} from "@/features/conversation/types";
+import type { ChatLink, ChatMessage } from "@/features/conversation/types";
 import {
   createAudioPlayback,
   synthesizeSpeech,
@@ -161,6 +158,7 @@ export function useConversation() {
                 links: temporaryLinks,
                 audioBase64: response.audio_base64,
                 route: response.route,
+                card: response.card,
               }
             : message,
         ),

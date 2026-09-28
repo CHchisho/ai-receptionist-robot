@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { QRCode } from "@/features/qr/QRCode";
-import { IconLink, IconQrCode } from "@/shared/icons";
+import { IconLink } from "@/shared/icons";
 import styles from "./LinkChip.module.css";
 
 type Props = {
