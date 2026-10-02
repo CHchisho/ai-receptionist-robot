@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
 import type { ChatLink, ChatMessage } from "@/features/conversation/types";
 import {
@@ -18,6 +18,10 @@ const WELCOME_MESSAGE: ChatMessage = {
 
 function createId() {
   return crypto.randomUUID();
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 function waitForNextPaint() {
@@ -43,6 +47,32 @@ export function useConversation() {
 
   const playbackRef = useRef<AudioPlayback | null>(null);
   const welcomeStartedRef = useRef(false);
+  const welcomeSpokenRef = useRef(false);
+  const welcomeAttemptRef = useRef(0);
+  const chatEpochRef = useRef(0);
+  const requestAbortRef = useRef<AbortController | null>(null);
+
+  function beginRequest() {
+    requestAbortRef.current?.abort();
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
+    return controller;
+  }
+
+  function cancelActiveWork() {
+    chatEpochRef.current += 1;
+    welcomeAttemptRef.current += 1;
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    playbackRef.current?.stop();
+    playbackRef.current = null;
+  }
+
+  useEffect(() => {
+    return () => {
+      cancelActiveWork();
+    };
+  }, []);
 
   async function playBase64Audio(
     audioBase64: string,
@@ -110,6 +140,8 @@ export function useConversation() {
       return;
     }
 
+    const epoch = chatEpochRef.current;
+    const request = beginRequest();
     setError(null);
     setStatus("processing");
 
@@ -138,7 +170,12 @@ export function useConversation() {
         question,
         sessionId,
         language,
+        request.signal,
       );
+
+      if (epoch !== chatEpochRef.current) {
+        return;
+      }
 
       setSessionId(response.session_id);
 
@@ -168,15 +205,20 @@ export function useConversation() {
         ),
       );
 
-      if (response.audio_base64) {
+      if (response.audio_base64 && epoch === chatEpochRef.current) {
         await playBase64Audio(
           response.audio_base64,
           assistantMessageId,
         );
       }
 
-      setStatus("idle");
-    } catch {
+      if (epoch === chatEpochRef.current) {
+        setStatus("idle");
+      }
+    } catch (error) {
+      if (epoch !== chatEpochRef.current || isAbortError(error)) {
+        return;
+      }
       setMessages((current) => current.filter((message) => message.id !== assistantMessageId));
       setStatus("error");
       setError("Could not get an answer. Please try again.");
@@ -193,13 +235,22 @@ export function useConversation() {
       return;
     }
 
+    const attempt = ++welcomeAttemptRef.current;
+    const request = beginRequest();
     welcomeStartedRef.current = true;
     setError(null);
     setStatus("processing");
 
     try {
-      const audioBase64 = await synthesizeSpeech(WELCOME_MESSAGE.content);
-      setWelcomeSpoken(true);
+      const audioBase64 = await synthesizeSpeech(
+        WELCOME_MESSAGE.content,
+        request.signal,
+      );
+      if (welcomeAttemptRef.current !== attempt) {
+        return;
+      }
+
+      markWelcomeSpoken();
 
       if (audioBase64) {
         setMessages((current) =>
@@ -210,12 +261,41 @@ export function useConversation() {
         await playBase64Audio(audioBase64, "welcome");
       }
 
-      setStatus("idle");
-    } catch {
+      if (welcomeAttemptRef.current === attempt) {
+        setStatus("idle");
+      }
+    } catch (error) {
+      if (
+        welcomeAttemptRef.current !== attempt ||
+        welcomeSpokenRef.current ||
+        isAbortError(error)
+      ) {
+        return;
+      }
       welcomeStartedRef.current = false;
       setStatus("idle");
       setError("Could not play the welcome message.");
     }
+  }
+
+  function markWelcomeSpoken() {
+    welcomeSpokenRef.current = true;
+    setWelcomeSpoken(true);
+    setError(null);
+  }
+
+  function startNewChat() {
+    cancelActiveWork();
+    stopSpeaking();
+    welcomeStartedRef.current = false;
+    welcomeSpokenRef.current = false;
+    setMessages([
+      { ...WELCOME_MESSAGE, createdAt: new Date().toISOString() },
+    ]);
+    setSessionId(undefined);
+    setError(null);
+    setWelcomeSpoken(false);
+    setStatus("welcome");
   }
 
   function stopSpeaking() {
@@ -237,6 +317,9 @@ export function useConversation() {
     }
 
     if (message.audioBase64) {
+      if (message.id === "welcome") {
+        setError(null);
+      }
       void playBase64Audio(message.audioBase64, message.id);
       return;
     }
@@ -246,9 +329,18 @@ export function useConversation() {
     }
 
     void (async () => {
+      const attempt = ++welcomeAttemptRef.current;
+      const request = beginRequest();
+      setError(null);
       setStatus("processing");
       try {
-        const audioBase64 = await synthesizeSpeech(WELCOME_MESSAGE.content);
+        const audioBase64 = await synthesizeSpeech(
+          WELCOME_MESSAGE.content,
+          request.signal,
+        );
+        if (welcomeAttemptRef.current !== attempt) {
+          return;
+        }
         if (!audioBase64) {
           setStatus("idle");
           return;
@@ -258,11 +350,20 @@ export function useConversation() {
             item.id === "welcome" ? { ...item, audioBase64 } : item,
           ),
         );
-        setWelcomeSpoken(true);
+        markWelcomeSpoken();
         welcomeStartedRef.current = true;
         await playBase64Audio(audioBase64, "welcome");
-        setStatus("idle");
-      } catch {
+        if (welcomeAttemptRef.current === attempt) {
+          setStatus("idle");
+        }
+      } catch (error) {
+        if (
+          welcomeAttemptRef.current !== attempt ||
+          welcomeSpokenRef.current ||
+          isAbortError(error)
+        ) {
+          return;
+        }
         setStatus("idle");
         setError("Could not play the welcome message.");
       }
@@ -277,6 +378,7 @@ export function useConversation() {
     sessionId,
     stopSpeaking,
     speakWelcomeOnce,
+    startNewChat,
     welcomeSpoken,
     playingMessageId,
     audioProgress,
