@@ -41,7 +41,7 @@ class StoreCatalogProvider:
         if callable(list_demos):
             for demo in list_demos():
                 title = str(demo.get("title") or "")
-                if title and title.lower() in normalized:
+                if title and _match_title(normalized, title):
                     return CatalogHit(
                         kind="demo",
                         title=title,
@@ -55,7 +55,7 @@ class StoreCatalogProvider:
         if callable(list_events):
             for event in list_events():
                 title = str(event.get("title") or "")
-                if title and title.lower() in normalized:
+                if title and _match_title(normalized, title):
                     return CatalogHit(
                         kind="event",
                         title=title,
@@ -69,4 +69,40 @@ class StoreCatalogProvider:
 
 
 def _normalize(value: str) -> str:
-    return " ".join(value.lower().replace("?", " ").replace(".", " ").split())
+    """Normalize query/title by lowercasing and removing punctuation."""
+    # Remove common punctuation while preserving spaces
+    import re
+    normalized = value.lower()
+    # Remove punctuation except spaces and hyphens (for compound words)
+    normalized = re.sub(r"[^\w\s\-]", " ", normalized)
+    # Collapse multiple spaces
+    return " ".join(normalized.split())
+
+
+def _match_title(query_normalized: str, title: str) -> bool:
+    """
+    Match query against title with partial word matching.
+    Returns True if significant words from the title appear in the query.
+    Example: "energy demo" matches "Energy Management System" (via "energy").
+    
+    Filters out common stop words to focus on meaningful keywords.
+    """
+    # Normalize query just in case (it should already be normalized by caller)
+    query_normalized = _normalize(query_normalized)
+    query_words = set(query_normalized.split())
+    title_normalized = _normalize(title)
+    title_words = set(title_normalized.split())
+    
+    # Common stop words to filter out
+    STOP_WORDS = {"a", "an", "the", "and", "or", "is", "in", "of", "to", "for"}
+    
+    # Extract meaningful keywords from title
+    title_keywords = title_words - STOP_WORDS
+    
+    # If all title words are stop words, fall back to exact title match
+    if not title_keywords:
+        return title_normalized in query_normalized
+    
+    # Match if at least one significant word from title is in query
+    return bool(title_keywords & query_words)
+
