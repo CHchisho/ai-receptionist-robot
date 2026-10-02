@@ -11,8 +11,23 @@
   background: var(--color-bg);
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+  /* Kiosk: no text selection, so "Search Google" never appears */
+  -webkit-user-select: none;
+  user-select: none;
+  /* iOS/Android: hide the long-press callout menu */
+  -webkit-touch-callout: none;
+}
+
+/* Allow selection in form fields so typing still works */
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html,
