@@ -118,7 +118,7 @@ frontend/src/
 2. **Catalog** (demos/events) — if question matches a demo/event title, return the card without RAG
 3. **RAG** — search knowledge base for text context, pass to LLM
 
-Catalog matching uses partial keyword matching: "Energy demo" finds "Energy Management System" (via the keyword "energy"). Common stop words (the, a, and, in, etc.) are filtered out when determining if a title matches.
+Catalog matching keeps the title that shares the most words with the question. "Energy demo" finds "Energy Management System" through "energy". A single short or generic word (`ai`, `demo`, `workshop`, `system`) is not enough, unless the whole title is in the question. Stop words (the, a, and, in) are ignored.
 
 **Voice input workflow:**
 
