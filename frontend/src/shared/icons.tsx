@@ -1,65 +1,67 @@
-import arrowUp from "@/assets/arrow-up.png";
-import ellipsisVertical from "@/assets/ellipsis-vertical.svg";
-import link from "@/assets/link.png";
-import play from "@/assets/play.png";
-import qrcode from "@/assets/qrcode.png";
-import stop from "@/assets/stop.png";
-import volumeHigh from "@/assets/volume-high.png";
-import volumeOff from "@/assets/volume-off.png";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowUp,
+  faEllipsisVertical,
+  faEye,
+  faEyeSlash,
+  faLink,
+  faMicrophone,
+  faPenToSquare,
+  faPlay,
+  faStop,
+  faTrash,
+  faVolumeHigh,
+  faVolumeXmark,
+} from "@fortawesome/free-solid-svg-icons";
 
 type IconProps = {
   className?: string;
 };
 
-function MaskIcon({ src, className }: { src: string; className?: string }) {
-  return (
-    <span
-      className={className}
-      aria-hidden="true"
-      style={{
-        display: "block",
-        backgroundColor: "currentColor",
-        WebkitMaskImage: `url(${src})`,
-        maskImage: `url(${src})`,
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
-      }}
-    />
-  );
-}
-
 export function IconArrowUp({ className }: IconProps) {
-  return <MaskIcon src={arrowUp} className={className} />;
+  return <FontAwesomeIcon icon={faArrowUp} className={className} />;
 }
 
 export function IconLink({ className }: IconProps) {
-  return <MaskIcon src={link} className={className} />;
+  return <FontAwesomeIcon icon={faLink} className={className} />;
 }
 
 export function IconPlay({ className }: IconProps) {
-  return <MaskIcon src={play} className={className} />;
-}
-
-export function IconQrCode({ className }: IconProps) {
-  return <MaskIcon src={qrcode} className={className} />;
+  return <FontAwesomeIcon icon={faPlay} className={className} />;
 }
 
 export function IconStop({ className }: IconProps) {
-  return <MaskIcon src={stop} className={className} />;
+  return <FontAwesomeIcon icon={faStop} className={className} />;
 }
 
 export function IconVolumeHigh({ className }: IconProps) {
-  return <MaskIcon src={volumeHigh} className={className} />;
+  return <FontAwesomeIcon icon={faVolumeHigh} className={className} />;
 }
 
 export function IconVolumeOff({ className }: IconProps) {
-  return <MaskIcon src={volumeOff} className={className} />;
+  return <FontAwesomeIcon icon={faVolumeXmark} className={className} />;
+}
+
+export function IconEye({ className }: IconProps) {
+  return <FontAwesomeIcon icon={faEye} className={className} />;
+}
+
+export function IconEyeSlash({ className }: IconProps) {
+  return <FontAwesomeIcon icon={faEyeSlash} className={className} />;
+}
+
+export function IconTrash({ className }: IconProps) {
+  return <FontAwesomeIcon icon={faTrash} className={className} />;
 }
 
 export function IconEllipsisVertical({ className }: IconProps) {
-  return <MaskIcon src={ellipsisVertical} className={className} />;
+  return <FontAwesomeIcon icon={faEllipsisVertical} className={className} />;
+}
+
+export function IconPenToSquare({ className }: IconProps) {
+  return <FontAwesomeIcon icon={faPenToSquare} className={className} />;
+}
+
+export function IconMicrophone({ className }: IconProps) {
+  return <FontAwesomeIcon icon={faMicrophone} className={className} />;
 }

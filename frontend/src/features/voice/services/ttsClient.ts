@@ -204,9 +204,13 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
   };
 }
 
-export async function synthesizeSpeech(text: string): Promise<string | null> {
+export async function synthesizeSpeech(
+  text: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
   const response = await fetch(`${env.apiBaseUrl}/api/v1/conversation/speak`, {
     method: "POST",
+    signal,
     headers: {
       "Content-Type": "application/json",
     },

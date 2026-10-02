@@ -13,8 +13,8 @@ def test_transcribe_joins_segment_text() -> None:
     fake_model.transcribe.return_value = (fake_segments, fake_info)
 
     with patch("faster_whisper.WhisperModel", return_value=fake_model) as model_cls:
-        provider = WhisperSttProvider(model_size="tiny", device="cpu", compute_type="int8")
-        model_cls.assert_called_once_with("tiny", device="cpu", compute_type="int8")
+        provider = WhisperSttProvider(model_size="small", device="cpu", compute_type="int8")
+        model_cls.assert_called_once_with("small", device="cpu", compute_type="int8")
 
         result = provider.transcribe(b"fake-audio-bytes")
 
@@ -35,5 +35,6 @@ def test_transcribe_returns_detected_finnish() -> None:
         result = WhisperSttProvider().transcribe(b"fake-audio-bytes")
 
     assert fake_model.transcribe.call_count == 1
+    assert "language" not in fake_model.transcribe.call_args.kwargs
     assert result.text == "Hei"
     assert result.language == "fi"

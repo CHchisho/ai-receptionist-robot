@@ -14,7 +14,7 @@ class WhisperSttProvider:
 
     def __init__(
         self,
-        model_size: str = "base",
+        model_size: str = "small",
         device: str = "cpu",
         compute_type: str = "int8",
     ) -> None:

@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react";
+import { IconMicrophone } from "@/shared/icons";
 import { AskForm } from "@/features/conversation/components/AskForm";
 import { MessageList } from "@/features/conversation/components/MessageList";
+import { PresencePrompt } from "@/features/conversation/components/PresencePrompt";
 import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { RecordButton } from "@/features/voice/components/RecordButton";
+import { env } from "@/shared/config/env";
 import styles from "./ChatPanel.module.css";
+
+const PRESENCE_CONFIRM_MS = 15_000;
 
 type ChatPanelProps = {
   conversation: ReturnType<typeof useConversation>;
+  onIdleTimeout: () => void;
 };
 
-export function ChatPanel({ conversation }: ChatPanelProps) {
+export function ChatPanel({ conversation, onIdleTimeout }: ChatPanelProps) {
   const {
     messages,
     status,
@@ -36,6 +42,10 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
   const hasReply = messages.some(
     (message) => message.role === "assistant" && message.id !== "welcome",
   );
+  const lastQuestion = [...messages]
+    .reverse()
+    .find((message) => message.role === "user");
+  const idlePaused = busy || recordingState !== "idle";
 
   const messagesRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +117,7 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
             disabled={busy}
             aria-label="Start Lena"
           >
-            <span className={styles.welcomeMicIcon} aria-hidden="true" />
+            <IconMicrophone className={styles.welcomeMicIcon} />
             <span className={styles.welcomeMicText}>
               {isStartingWelcome ? "Starting…" : "Tap to start"}
             </span>
@@ -151,6 +161,14 @@ export function ChatPanel({ conversation }: ChatPanelProps) {
           </>
         )}
       </div>
+
+      <PresencePrompt
+        active={Boolean(lastQuestion) && !idlePaused}
+        resetKey={lastQuestion?.id ?? ""}
+        idleMs={env.chatIdleSeconds * 1000}
+        confirmMs={PRESENCE_CONFIRM_MS}
+        onTimeout={onIdleTimeout}
+      />
     </section>
   );
 }

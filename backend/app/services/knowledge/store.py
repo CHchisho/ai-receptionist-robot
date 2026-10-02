@@ -63,7 +63,11 @@ def _init(connection: sqlite3.Connection) -> None:
             description TEXT NOT NULL,
             location TEXT NOT NULL,
             url TEXT,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            image_bytes BLOB,
+            image_mime TEXT,
+            image_hash TEXT,
+            hidden INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +75,11 @@ def _init(connection: sqlite3.Connection) -> None:
             event_time TEXT NOT NULL,
             room TEXT NOT NULL,
             description TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            image_bytes BLOB,
+            image_mime TEXT,
+            image_hash TEXT,
+            hidden INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS kiosk_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -88,7 +96,10 @@ def _init(connection: sqlite3.Connection) -> None:
             aliases_json TEXT NOT NULL,
             sort_order INTEGER NOT NULL,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            image_bytes BLOB,
+            image_mime TEXT,
+            image_hash TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id, id);
         CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id, id);
@@ -103,8 +114,48 @@ def _init(connection: sqlite3.Connection) -> None:
         )
         """
     )
+    _ensure_image_columns(connection)
     _seed_locations(connection)
     connection.commit()
+
+
+def _ensure_image_columns(connection: sqlite3.Connection) -> None:
+    for table in ("demos", "events", "locations"):
+        existing = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+        for name, column_type in (
+            ("image_bytes", "BLOB"),
+            ("image_mime", "TEXT"),
+            ("image_hash", "TEXT"),
+        ):
+            if name not in existing:
+                connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {column_type}")
+        if table in {"demos", "events"} and "hidden" not in existing:
+            connection.execute(
+                f"ALTER TABLE {table} ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0"
+            )
+
+
+_DEMO_FIELDS = "id, title, description, location, url, created_at, image_hash, hidden"
+_EVENT_FIELDS = "id, title, event_time, room, description, created_at, image_hash, hidden"
+_LOCATION_FIELDS = "id, name, floor, landmark, directions, aliases_json, sort_order, image_hash"
+
+
+def _image_url(collection: str, item_id: int, image_hash: str | None) -> str | None:
+    if not image_hash:
+        return None
+    if collection == "locations":
+        return f"/api/v1/navigation/locations/{item_id}/image?v={image_hash[:16]}"
+    return f"/api/v1/content/{collection}/{item_id}/image?v={image_hash[:16]}"
+
+
+def _public_row(row: sqlite3.Row, collection: str) -> dict:
+    item = dict(row)
+    image_hash = item.pop("image_hash", None)
+    item["has_image"] = image_hash is not None
+    item["image_url"] = _image_url(collection, int(item["id"]), image_hash)
+    if "hidden" in item:
+        item["hidden"] = bool(item["hidden"])
+    return item
 
 
 def seed_demo_content() -> None:
@@ -360,6 +411,24 @@ def list_feedback() -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def delete_feedback(feedback_id: int) -> None:
+    with connect() as connection:
+        connection.execute("DELETE FROM feedback WHERE id = ?", (feedback_id,))
+        connection.commit()
+
+
+def delete_feedback_ids(ids: list[int]) -> None:
+    if not ids:
+        return
+    placeholders = ",".join("?" * len(ids))
+    with connect() as connection:
+        connection.execute(
+            f"DELETE FROM feedback WHERE id IN ({placeholders})",
+            ids,
+        )
+        connection.commit()
+
+
 def add_demo(
     title: str,
     description: str,
@@ -379,27 +448,32 @@ def add_demo(
         demo_id = cursor.lastrowid
         connection.commit()
 
-    return {
-        "id": demo_id,
-        "title": title,
-        "description": description,
-        "location": location,
-        "url": url,
-        "created_at": created_at,
-    }
+    return _public_row(
+        {
+            "id": demo_id,
+            "title": title,
+            "description": description,
+            "location": location,
+            "url": url,
+            "created_at": created_at,
+            "image_hash": None,
+            "hidden": 0,
+        },
+        "demos",
+    )
 
 
 def list_demos() -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
-            """
-            SELECT id, title, description, location, url, created_at
+            f"""
+            SELECT {_DEMO_FIELDS}
             FROM demos
             ORDER BY id DESC
             """
         ).fetchall()
 
-    return [dict(row) for row in rows]
+    return [_public_row(row, "demos") for row in rows]
 
 
 def delete_demo(demo_id: int) -> bool:
@@ -437,14 +511,14 @@ def update_demo(
         )
         connection.commit()
         row = connection.execute(
-            """
-            SELECT id, title, description, location, url, created_at
+            f"""
+            SELECT {_DEMO_FIELDS}
             FROM demos
             WHERE id = ?
             """,
             (demo_id,),
         ).fetchone()
-    return dict(row) if row else None
+    return _public_row(row, "demos") if row else None
 
 
 def add_event(
@@ -466,27 +540,32 @@ def add_event(
         event_id = cursor.lastrowid
         connection.commit()
 
-    return {
-        "id": event_id,
-        "title": title,
-        "event_time": event_time,
-        "room": room,
-        "description": description,
-        "created_at": created_at,
-    }
+    return _public_row(
+        {
+            "id": event_id,
+            "title": title,
+            "event_time": event_time,
+            "room": room,
+            "description": description,
+            "created_at": created_at,
+            "image_hash": None,
+            "hidden": 0,
+        },
+        "events",
+    )
 
 
 def list_events() -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
-            """
-            SELECT id, title, event_time, room, description, created_at
+            f"""
+            SELECT {_EVENT_FIELDS}
             FROM events
             ORDER BY id DESC
             """
         ).fetchall()
 
-    return [dict(row) for row in rows]
+    return [_public_row(row, "events") for row in rows]
 
 
 def delete_event(event_id: int) -> bool:
@@ -524,14 +603,126 @@ def update_event(
         )
         connection.commit()
         row = connection.execute(
-            """
-            SELECT id, title, event_time, room, description, created_at
+            f"""
+            SELECT {_EVENT_FIELDS}
             FROM events
             WHERE id = ?
             """,
             (event_id,),
         ).fetchone()
-    return dict(row) if row else None
+    return _public_row(row, "events") if row else None
+
+
+def _set_image(table: str, collection: str, fields: str, item_id: int, data: bytes, mime: str) -> dict | None:
+    image_hash = hashlib.sha256(data).hexdigest()
+    with connect() as connection:
+        existing = connection.execute(
+            f"SELECT id FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+        if existing is None:
+            return None
+        connection.execute(
+            f"""
+            UPDATE {table}
+            SET image_bytes = ?, image_mime = ?, image_hash = ?
+            WHERE id = ?
+            """,
+            (data, mime, image_hash, item_id),
+        )
+        connection.commit()
+        row = connection.execute(
+            f"SELECT {fields} FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+    return _public_row(row, collection) if row else None
+
+
+def _clear_image(table: str, collection: str, fields: str, item_id: int) -> dict | None:
+    with connect() as connection:
+        existing = connection.execute(
+            f"SELECT id FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+        if existing is None:
+            return None
+        connection.execute(
+            f"""
+            UPDATE {table}
+            SET image_bytes = NULL, image_mime = NULL, image_hash = NULL
+            WHERE id = ?
+            """,
+            (item_id,),
+        )
+        connection.commit()
+        row = connection.execute(
+            f"SELECT {fields} FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+    return _public_row(row, collection) if row else None
+
+
+def _get_image(table: str, item_id: int) -> tuple[str, bytes] | None:
+    with connect() as connection:
+        row = connection.execute(
+            f"SELECT image_mime, image_bytes FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+    if row is None or row["image_bytes"] is None or not row["image_mime"]:
+        return None
+    return str(row["image_mime"]), bytes(row["image_bytes"])
+
+
+def set_demo_image(demo_id: int, data: bytes, mime: str) -> dict | None:
+    return _set_image("demos", "demos", _DEMO_FIELDS, demo_id, data, mime)
+
+
+def clear_demo_image(demo_id: int) -> dict | None:
+    return _clear_image("demos", "demos", _DEMO_FIELDS, demo_id)
+
+
+def get_demo_image(demo_id: int) -> tuple[str, bytes] | None:
+    return _get_image("demos", demo_id)
+
+
+def set_event_image(event_id: int, data: bytes, mime: str) -> dict | None:
+    return _set_image("events", "events", _EVENT_FIELDS, event_id, data, mime)
+
+
+def clear_event_image(event_id: int) -> dict | None:
+    return _clear_image("events", "events", _EVENT_FIELDS, event_id)
+
+
+def get_event_image(event_id: int) -> tuple[str, bytes] | None:
+    return _get_image("events", event_id)
+
+
+def set_demo_hidden(demo_id: int, hidden: bool) -> dict | None:
+    return _set_hidden("demos", "demos", _DEMO_FIELDS, demo_id, hidden)
+
+
+def set_event_hidden(event_id: int, hidden: bool) -> dict | None:
+    return _set_hidden("events", "events", _EVENT_FIELDS, event_id, hidden)
+
+
+def _set_hidden(table: str, collection: str, fields: str, item_id: int, hidden: bool) -> dict | None:
+    with connect() as connection:
+        existing = connection.execute(
+            f"SELECT id FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+        if existing is None:
+            return None
+        connection.execute(
+            f"UPDATE {table} SET hidden = ? WHERE id = ?",
+            (1 if hidden else 0, item_id),
+        )
+        connection.commit()
+        row = connection.execute(
+            f"SELECT {fields} FROM {table} WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+    return _public_row(row, collection) if row else None
 
 
 def get_kiosk_mode() -> str:
@@ -561,13 +752,15 @@ class LocationRecord:
     directions: str
     aliases: list[str]
     sort_order: int
+    has_image: bool
+    image_url: str | None
 
 
 def list_locations() -> list[LocationRecord]:
     with connect() as connection:
         rows = connection.execute(
-            """
-            SELECT id, name, floor, landmark, directions, aliases_json, sort_order
+            f"""
+            SELECT {_LOCATION_FIELDS}
             FROM locations
             ORDER BY sort_order, id
             """
@@ -578,8 +771,8 @@ def list_locations() -> list[LocationRecord]:
 def get_location(location_id: int) -> LocationRecord | None:
     with connect() as connection:
         row = connection.execute(
-            """
-            SELECT id, name, floor, landmark, directions, aliases_json, sort_order
+            f"""
+            SELECT {_LOCATION_FIELDS}
             FROM locations
             WHERE id = ?
             """,
@@ -637,6 +830,43 @@ def update_location(
         if cursor.rowcount == 0:
             return None
     return get_location(location_id)
+
+
+def set_location_image(location_id: int, data: bytes, mime: str) -> LocationRecord | None:
+    image_hash = hashlib.sha256(data).hexdigest()
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            UPDATE locations
+            SET image_bytes = ?, image_mime = ?, image_hash = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (data, mime, image_hash, _utc_now(), location_id),
+        )
+        connection.commit()
+        if cursor.rowcount == 0:
+            return None
+    return get_location(location_id)
+
+
+def clear_location_image(location_id: int) -> LocationRecord | None:
+    with connect() as connection:
+        cursor = connection.execute(
+            """
+            UPDATE locations
+            SET image_bytes = NULL, image_mime = NULL, image_hash = NULL, updated_at = ?
+            WHERE id = ?
+            """,
+            (_utc_now(), location_id),
+        )
+        connection.commit()
+        if cursor.rowcount == 0:
+            return None
+    return get_location(location_id)
+
+
+def get_location_image(location_id: int) -> tuple[str, bytes] | None:
+    return _get_image("locations", location_id)
 
 
 def delete_location(location_id: int) -> bool:
@@ -702,6 +932,7 @@ def _seed_locations(connection: sqlite3.Connection) -> None:
 
 
 def _location_from_row(row: sqlite3.Row) -> LocationRecord:
+    image_hash = row["image_hash"]
     return LocationRecord(
         id=row["id"],
         name=row["name"],
@@ -710,6 +941,8 @@ def _location_from_row(row: sqlite3.Row) -> LocationRecord:
         directions=row["directions"],
         aliases=json.loads(row["aliases_json"] or "[]"),
         sort_order=row["sort_order"],
+        has_image=image_hash is not None,
+        image_url=_image_url("locations", int(row["id"]), image_hash),
     )
 
 

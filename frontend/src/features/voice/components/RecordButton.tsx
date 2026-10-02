@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconMicrophone, IconStop } from "@/shared/icons";
 import { useMicrophone } from "@/features/voice/hooks/useMicrophone";
 import { transcribeAudio } from "@/features/voice/services/sttClient";
 import styles from "./RecordButton.module.css";
@@ -86,7 +87,11 @@ export function RecordButton({
         aria-label={isRecording ? "Stop recording" : "Start voice recording"}
       >
         <span className={styles.pulse} aria-hidden="true" />
-        <span className={styles.icon} aria-hidden="true" />
+        {isRecording ? (
+          <IconStop className={styles.icon} />
+        ) : (
+          <IconMicrophone className={styles.icon} />
+        )}
       </button>
 
       {error ? <p className={styles.error}>{error}</p> : null}

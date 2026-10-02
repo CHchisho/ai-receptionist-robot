@@ -20,3 +20,15 @@ def test_save_and_list_feedback():
     assert items[0]["rating"] == 5
     assert items[0]["comment"] == "Great service"
     assert items[0]["session_id"] == "test-session-123"
+
+
+def test_delete_feedback():
+    first = feedback.save_feedback(rating=4, comment="One", session_id=None)
+    second = feedback.save_feedback(rating=2, comment="Two", session_id=None)
+
+    feedback.delete_feedback(first["id"])
+    remaining = feedback.list_feedback()
+    assert [item["id"] for item in remaining] == [second["id"]]
+
+    feedback.delete_feedback_ids([second["id"]])
+    assert feedback.list_feedback() == []

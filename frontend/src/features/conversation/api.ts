@@ -5,9 +5,11 @@ export function askQuestion(
   text: string,
   sessionId?: string,
   language = "en",
+  signal?: AbortSignal,
 ) {
   return http<AskResponse>("/api/v1/conversation/ask", {
     method: "POST",
+    signal,
     body: JSON.stringify({
       text,
       session_id: sessionId ?? null,

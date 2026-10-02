@@ -19,6 +19,7 @@ class SqliteNavigationProvider:
                     floor=record.floor,
                     landmark=record.landmark,
                     directions=record.directions,
+                    image_url=record.image_url,
                 )
         return None
 

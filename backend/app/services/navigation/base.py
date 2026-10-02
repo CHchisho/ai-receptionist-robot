@@ -8,6 +8,7 @@ class Location:
     floor: str
     landmark: str
     directions: str
+    image_url: str | None = None
 
 
 class NavigationProvider(Protocol):

@@ -77,6 +77,19 @@
   border-radius: 0.75rem;
 }
 
+.itemRow {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.itemBody {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .itemHead {
   display: flex;
   justify-content: space-between;
@@ -229,9 +242,14 @@
   color: var(--color-danger);
 }
 
+.file {
+  font: inherit;
+}
+
 @media (max-width: 640px) {
   .headerRow,
-  .itemHead {
+  .itemHead,
+  .itemRow {
     flex-direction: column;
   }
 

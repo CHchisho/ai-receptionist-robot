@@ -1,0 +1,113 @@
+.frame {
+  position: relative;
+  flex: 0 0 9.5rem;
+  width: 9.5rem;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  height: 9.5rem;
+  object-fit: cover;
+  border-radius: 0.65rem;
+  background: var(--color-bg);
+}
+
+.remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.72);
+  color: #fff;
+  cursor: pointer;
+}
+
+.removeIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.tip {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 2;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.35rem;
+  background: #111;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.remove:hover .tip,
+.remove:focus-visible .tip {
+  opacity: 1;
+}
+
+.confirm {
+  position: absolute;
+  top: 2.4rem;
+  right: 0;
+  z-index: 3;
+  display: grid;
+  gap: 0.45rem;
+  width: 11.5rem;
+  padding: 0.65rem;
+  border-radius: 0.55rem;
+  background: #fff;
+  color: inherit;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.confirm p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirm button {
+  border: 0;
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.ghost {
+  background: var(--color-bg);
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .frame {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .thumb {
+    height: 12rem;
+  }
+}

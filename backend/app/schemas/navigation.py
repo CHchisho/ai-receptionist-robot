@@ -59,6 +59,8 @@ class LocationResponse(BaseModel):
     directions: str
     aliases: list[str]
     sort_order: int
+    has_image: bool = False
+    image_url: str | None = None
 
 
 class LocationListResponse(BaseModel):

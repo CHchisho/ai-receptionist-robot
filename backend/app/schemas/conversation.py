@@ -25,6 +25,7 @@ class NavigationRoute(BaseModel):
     floor: str
     landmark: str
     directions: str
+    image_url: str | None = None
 
 
 class ContentCard(BaseModel):
@@ -35,6 +36,7 @@ class ContentCard(BaseModel):
     event_time: str | None = None
     room: str | None = None
     url: str | None = None
+    image_url: str | None = None
 
 
 class AskResponse(BaseModel):

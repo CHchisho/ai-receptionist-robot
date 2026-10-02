@@ -2,15 +2,20 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   createLocation,
   deleteLocation,
+  deleteLocationImage,
   listLocations,
   moveLocation,
   updateLocation,
+  uploadLocationImage,
   type LocationDraft,
   type MapLocation,
 } from "@/features/map/api";
+import { ApiError } from "@/shared/api/http";
+import { PhotoFrame } from "@/shared/photos/PhotoFrame";
+import { EMPTY_PHOTO, PhotoPicker, type PhotoFields } from "@/shared/photos/PhotoPicker";
 import styles from "./MapPanel.module.css";
 
-type FormState = {
+type FormState = PhotoFields & {
   name: string;
   floor: string;
   landmark: string;
@@ -24,6 +29,7 @@ const EMPTY_FORM: FormState = {
   landmark: "",
   directions: "",
   aliases: "",
+  ...EMPTY_PHOTO,
 };
 
 function toForm(location: MapLocation): FormState {
@@ -33,6 +39,9 @@ function toForm(location: MapLocation): FormState {
     landmark: location.landmark,
     directions: location.directions,
     aliases: location.aliases.join(", "),
+    photoFile: null,
+    photoRemoved: false,
+    photoBaseline: location.image_url,
   };
 }
 
@@ -102,10 +111,20 @@ export function MapPanel() {
     setError(null);
     try {
       const draft = toDraft(form);
-      if (editingId !== null) {
-        await updateLocation(editingId, draft);
-      } else {
-        await createLocation(draft);
+      const saved = editingId !== null ? await updateLocation(editingId, draft) : await createLocation(draft);
+      try {
+        if (form.photoFile) {
+          await uploadLocationImage(saved.id, form.photoFile);
+        } else if (form.photoRemoved && form.photoBaseline) {
+          await deleteLocationImage(saved.id);
+        }
+      } catch (error) {
+        setCreating(false);
+        setEditingId(saved.id);
+        setForm((current) => ({ ...current, photoBaseline: saved.image_url }));
+        setError(error instanceof ApiError ? error.message : "Could not save the photo.");
+        await refresh();
+        return;
       }
       cancelForm();
       await refresh();
@@ -141,6 +160,19 @@ export function MapPanel() {
       await refresh();
     } catch {
       setError("Could not delete this place.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removePhoto(location: MapLocation) {
+    setSaving(true);
+    setError(null);
+    try {
+      await deleteLocationImage(location.id);
+      await refresh();
+    } catch (error) {
+      setError(error instanceof ApiError ? error.message : "Could not remove the photo.");
     } finally {
       setSaving(false);
     }
@@ -192,6 +224,11 @@ export function MapPanel() {
             </li>
           ) : (
             <li key={location.id} className={styles.item}>
+              <div className={styles.itemRow}>
+              {location.image_url ? (
+                <PhotoFrame url={location.image_url} disabled={saving} onRemove={() => void removePhoto(location)} />
+              ) : null}
+              <div className={styles.itemBody}>
               <div className={styles.itemHead}>
                 <div>
                   <h3 className={styles.name}>{location.name}</h3>
@@ -252,6 +289,8 @@ export function MapPanel() {
                   </button>
                 </div>
               )}
+              </div>
+              </div>
             </li>
           ),
         )}
@@ -338,6 +377,15 @@ function LocationForm({
         />
         <span className={styles.hint}>Separate phrases with commas. The place name is matched even if it is not listed here.</span>
       </div>
+      <PhotoPicker
+        idPrefix="place"
+        form={form}
+        fieldClass={styles.field}
+        fileClass={styles.file}
+        hintClass={styles.hint}
+        errorClass={styles.error}
+        onChange={(photo) => onChange({ ...form, ...photo })}
+      />
       <div className={styles.formActions}>
         <button className={styles.primary} type="submit" disabled={saving}>
           {saving ? "Saving…" : submitLabel}

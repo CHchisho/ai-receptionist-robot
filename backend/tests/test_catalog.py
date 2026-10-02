@@ -61,6 +61,18 @@ class TestMatchTitle:
         """Punctuation should be normalized away."""
         assert _match_title("energy? demo.", "Energy, Management System!")
 
+    def test_short_word_alone_does_not_match(self):
+        """A two-letter token such as 'ai' must not steal the question."""
+        assert not _match_title("what is AI", "AI Receptionist Robot")
+
+    def test_generic_word_alone_does_not_match(self):
+        """'workshop' alone must not match every workshop."""
+        assert not _match_title("workshop", "AI Workshop")
+        assert not _match_title("workshop", "Robotics Workshop")
+
+    def test_full_title_still_matches_when_words_are_generic(self):
+        assert _match_title("AI Workshop", "AI Workshop")
+
 
 class TestStoreCatalogProvider:
     """Test StoreCatalogProvider with real demo data."""
@@ -268,6 +280,67 @@ class TestStoreCatalogProvider:
             hit = provider.find("innovation demo")
             
             assert hit.url == "https://example.com/innovation"
+        finally:
+            if original_module:
+                sys.modules["app.services.knowledge"] = original_module
+            elif "app.services.knowledge" in sys.modules:
+                del sys.modules["app.services.knowledge"]
+
+    def test_best_overlap_wins_among_several_records(self):
+        """The title with more shared words wins, not the first list entry."""
+        provider = StoreCatalogProvider()
+        mock_store = MagicMock()
+        mock_store.list_demos.return_value = [
+            {
+                "id": 1,
+                "title": "AI Receptionist Robot",
+                "description": "Reception desk",
+                "location": "Main Hall",
+                "url": None,
+            },
+            {
+                "id": 2,
+                "title": "Energy Management System",
+                "description": "Energy usage",
+                "location": "Demo Area",
+                "url": None,
+            },
+        ]
+        mock_store.list_events.return_value = [
+            {
+                "id": 3,
+                "title": "AI Workshop",
+                "description": "AI session",
+                "event_time": "14:00",
+                "room": "Room 201",
+            },
+            {
+                "id": 4,
+                "title": "Robotics Workshop",
+                "description": "Robotics session",
+                "event_time": "15:30",
+                "room": "Room 202",
+            },
+        ]
+
+        import sys
+        original_module = sys.modules.get("app.services.knowledge")
+        try:
+            mock_knowledge = MagicMock()
+            mock_knowledge.store = mock_store
+            sys.modules["app.services.knowledge"] = mock_knowledge
+
+            energy = provider.find("Energy demo")
+            assert energy is not None
+            assert energy.title == "Energy Management System"
+
+            robotics = provider.find("robotics workshop")
+            assert robotics is not None
+            assert robotics.kind == "event"
+            assert robotics.title == "Robotics Workshop"
+
+            assert provider.find("what is AI") is None
+            assert provider.find("workshop") is None
         finally:
             if original_module:
                 sys.modules["app.services.knowledge"] = original_module

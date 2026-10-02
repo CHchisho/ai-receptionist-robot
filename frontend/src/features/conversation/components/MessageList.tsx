@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import type { ChatMessage } from "@/features/conversation/types";
+import { mediaSrc } from "@/features/content/api";
 import { LinkChip } from "@/features/qr/LinkChip";
 import { LinkifiedText } from "@/features/qr/LinkifiedText";
 import { IconPlay, IconStop } from "@/shared/icons";
@@ -37,7 +40,10 @@ export function MessageList({
                   ? `${styles.assistant} ${styles.pending}`
                   : styles.assistant
             }
-            onClick={() => {
+            onClick={(event) => {
+              if (!event.currentTarget.contains(event.target as Node)) {
+                return;
+              }
               if (canPlay) {
                 onTogglePlayback(message);
               }
@@ -72,6 +78,9 @@ export function MessageList({
 
             {message.role === "assistant" && message.card ? (
               <div className={styles.contentCard}>
+                {message.card.image_url ? (
+                  <CardPhoto src={message.card.image_url} alt={message.card.title} />
+                ) : null}
                 <strong>{message.card.title}</strong>
                 <p>{message.card.description}</p>
                 {message.card.kind === "demo" && message.card.location ? (
@@ -95,6 +104,10 @@ export function MessageList({
 
             {message.role === "assistant" && message.route ? (
               <section className={styles.routeCard} aria-label="Route details">
+                {message.route.image_url ? (
+                  <CardPhoto src={message.route.image_url} alt={message.route.name} />
+                ) : null}
+                <div className={styles.routeBody}>
                 <div>
                   <span className={styles.routeLabel}>Where</span>
                   <strong>{message.route.name}</strong>
@@ -110,6 +123,7 @@ export function MessageList({
                   </div>
                 </div>
                 <p>{message.route.directions}</p>
+                </div>
               </section>
             ) : null}
 
@@ -122,5 +136,64 @@ export function MessageList({
         );
       })}
     </ol>
+  );
+}
+
+function CardPhoto({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
+  const resolved = mediaSrc(src);
+  if (!resolved) {
+    return null;
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.cardPhotoButton}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
+      >
+        <img className={styles.cardPhoto} src={resolved} alt={alt} />
+      </button>
+      {open ? <PhotoLightbox src={resolved} alt={alt} onClose={() => setOpen(false)} /> : null}
+    </>
+  );
+}
+
+function PhotoLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function dismiss(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    onCloseRef.current();
+  }
+
+  return createPortal(
+    <div className={styles.lightbox} role="dialog" aria-modal="true" aria-label={alt} onClick={dismiss}>
+      <button ref={closeRef} type="button" className={styles.lightboxClose} onClick={dismiss}>
+        Close
+      </button>
+      <div className={styles.lightboxStage}>
+        <img className={styles.lightboxImage} src={src} alt={alt} onClick={dismiss} />
+      </div>
+    </div>,
+    document.body,
   );
 }
