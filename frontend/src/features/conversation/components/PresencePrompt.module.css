@@ -1,0 +1,44 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(18, 32, 44, 0.55);
+}
+
+.dialog {
+  width: min(100%, 28rem);
+  padding: 2rem 1.5rem 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  text-align: center;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.2);
+}
+
+.question {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  line-height: 1.2;
+}
+
+.stay {
+  min-width: 8rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stay:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 55%, white);
+  outline-offset: 3px;
+}

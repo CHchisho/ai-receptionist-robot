@@ -207,6 +207,7 @@ def _route_from_location(location: Location) -> NavigationRoute:
         floor=location.floor,
         landmark=location.landmark,
         directions=location.directions,
+        image_url=location.image_url,
     )
 
 
@@ -219,6 +220,7 @@ def _card_from_hit(hit: CatalogHit) -> ContentCard:
         event_time=hit.event_time,
         room=hit.room,
         url=hit.url,
+        image_url=hit.image_url,
     )
 
 

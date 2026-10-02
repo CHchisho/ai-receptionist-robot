@@ -10,6 +10,7 @@ export type NavigationRoute = {
   floor: string;
   landmark: string;
   directions: string;
+  image_url?: string | null;
 };
 
 export type ChatMessage = {
@@ -32,6 +33,7 @@ export type ContentCard = {
   event_time?: string | null;
   room?: string | null;
   url?: string | null;
+  image_url?: string | null;
 };
 
 export type AskResponse = {

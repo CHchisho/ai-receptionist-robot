@@ -20,6 +20,7 @@ class CatalogHit:
     event_time: str | None = None
     room: str | None = None
     url: str | None = None
+    image_url: str | None = None
 
 
 class CatalogProvider(Protocol):
@@ -59,10 +60,10 @@ def _catalog_rows(store: object) -> list[tuple[str, dict]]:
     rows: list[tuple[str, dict]] = []
     list_demos = getattr(store, "list_demos", None)
     if callable(list_demos):
-        rows.extend(("demo", row) for row in list_demos())
+        rows.extend(("demo", row) for row in list_demos() if not row.get("hidden"))
     list_events = getattr(store, "list_events", None)
     if callable(list_events):
-        rows.extend(("event", row) for row in list_events())
+        rows.extend(("event", row) for row in list_events() if not row.get("hidden"))
     return rows
 
 
@@ -76,6 +77,7 @@ def _hit_from_row(kind: str, row: dict) -> CatalogHit:
             description=description,
             location=row.get("location"),
             url=row.get("url"),
+            image_url=row.get("image_url"),
             source_id=f"demo-{row.get('id')}",
         )
     return CatalogHit(
@@ -84,6 +86,7 @@ def _hit_from_row(kind: str, row: dict) -> CatalogHit:
         description=description,
         event_time=row.get("event_time"),
         room=row.get("room"),
+        image_url=row.get("image_url"),
         source_id=f"event-{row.get('id')}",
     )
 

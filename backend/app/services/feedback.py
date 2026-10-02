@@ -13,3 +13,11 @@ def save_feedback(
 
 def list_feedback() -> list[dict[str, Any]]:
     return store.list_feedback()
+
+
+def delete_feedback(feedback_id: int) -> None:
+    store.delete_feedback(feedback_id)
+
+
+def delete_feedback_ids(ids: list[int]) -> None:
+    store.delete_feedback_ids(ids)

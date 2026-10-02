@@ -67,7 +67,11 @@ export function ReceptionPage() {
       {kioskMode === "survey" ? (
         <FeedbackForm sessionId={conversation.sessionId} />
       ) : (
-        <ChatPanel key={panelKey} conversation={conversation} />
+        <ChatPanel
+          key={panelKey}
+          conversation={conversation}
+          onIdleTimeout={handleNewChat}
+        />
       )}
     </main>
   );

@@ -83,6 +83,23 @@
   border-radius: 0.75rem;
 }
 
+.itemHidden {
+  opacity: 0.62;
+}
+
+.itemRow {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.itemBody {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .name {
   margin: 0;
   font-size: 1.02rem;
@@ -103,6 +120,19 @@
   color: var(--color-accent);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 0.6rem;
+  background: var(--color-bg);
+}
+
+.file {
+  font: inherit;
 }
 
 .actions,
@@ -130,6 +160,33 @@
 
 .textDanger {
   color: var(--color-danger);
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iconBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  margin-top: 3px;
 }
 
 .confirm {
@@ -199,7 +256,8 @@
 }
 
 @media (max-width: 640px) {
-  .headerRow {
+  .headerRow,
+  .itemRow {
     flex-direction: column;
   }
 

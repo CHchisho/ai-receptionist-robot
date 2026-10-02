@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from app.services.feedback import list_feedback, save_feedback
+from app.services.feedback import delete_feedback, delete_feedback_ids, list_feedback, save_feedback
 
 router = APIRouter(prefix="/feedback")
 
@@ -28,3 +28,19 @@ def submit_feedback(feedback: FeedbackRequest):
 @router.get("")
 def get_feedback():
     return list_feedback()
+
+
+class FeedbackDeleteRequest(BaseModel):
+    ids: list[int] = Field(min_length=1)
+
+
+@router.delete("/{feedback_id}")
+def remove_feedback(feedback_id: int):
+    delete_feedback(feedback_id)
+    return {"ok": True}
+
+
+@router.delete("")
+def remove_feedback_batch(body: FeedbackDeleteRequest):
+    delete_feedback_ids(body.ids)
+    return {"ok": True}

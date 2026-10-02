@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
+from app.api.images import image_response, read_upload, store_image
 from app.schemas.navigation import LocationListResponse, LocationMove, LocationResponse, LocationWrite
 from app.services.knowledge import store
 
@@ -15,6 +16,8 @@ def _response(record: store.LocationRecord) -> LocationResponse:
         directions=record.directions,
         aliases=record.aliases,
         sort_order=record.sort_order,
+        has_image=record.has_image,
+        image_url=record.image_url,
     )
 
 
@@ -53,6 +56,25 @@ def update_location(location_id: int, payload: LocationWrite) -> LocationRespons
 @router.post("/locations/{location_id}/move", response_model=LocationResponse)
 def move_location(location_id: int, payload: LocationMove) -> LocationResponse:
     record = store.move_location(location_id, payload.direction)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return _response(record)
+
+
+@router.get("/locations/{location_id}/image")
+def read_location_image(location_id: int):
+    return image_response(store.get_location_image(location_id))
+
+
+@router.put("/locations/{location_id}/image", response_model=LocationResponse)
+async def upload_location_image(location_id: int, file: UploadFile = File(...)):
+    record = store_image(store.set_location_image, location_id, await read_upload(file), "Location not found")
+    return _response(record)
+
+
+@router.delete("/locations/{location_id}/image", response_model=LocationResponse)
+def remove_location_image(location_id: int) -> LocationResponse:
+    record = store.clear_location_image(location_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Location not found")
     return _response(record)

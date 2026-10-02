@@ -8,6 +8,8 @@ export type MapLocation = {
   directions: string;
   aliases: string[];
   sort_order: number;
+  has_image: boolean;
+  image_url: string | null;
 };
 
 export type LocationDraft = {
@@ -45,6 +47,21 @@ export function moveLocation(id: number, direction: "up" | "down") {
 
 export function deleteLocation(id: number) {
   return http<{ ok: boolean }>(`/api/v1/navigation/locations/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function uploadLocationImage(id: number, file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return http<MapLocation>(`/api/v1/navigation/locations/${id}/image`, {
+    method: "PUT",
+    body,
+  });
+}
+
+export function deleteLocationImage(id: number) {
+  return http<MapLocation>(`/api/v1/navigation/locations/${id}/image`, {
     method: "DELETE",
   });
 }

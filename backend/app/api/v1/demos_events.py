@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
+from app.api.images import image_response, read_upload, store_image
 from app.services.knowledge import store
 
 router = APIRouter(prefix="/content")
@@ -31,6 +32,10 @@ class DemoWrite(BaseModel):
             return None
         cleaned = value.strip()
         return cleaned or None
+
+
+class VisibilityWrite(BaseModel):
+    hidden: bool
 
 
 class EventWrite(BaseModel):
@@ -74,6 +79,32 @@ def update_demo(demo_id: int, demo: DemoWrite):
     return updated
 
 
+@router.patch("/demos/{demo_id}/visibility")
+def set_demo_visibility(demo_id: int, payload: VisibilityWrite):
+    updated = store.set_demo_hidden(demo_id, payload.hidden)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Demo not found")
+    return updated
+
+
+@router.get("/demos/{demo_id}/image")
+def read_demo_image(demo_id: int):
+    return image_response(store.get_demo_image(demo_id))
+
+
+@router.put("/demos/{demo_id}/image")
+async def upload_demo_image(demo_id: int, file: UploadFile = File(...)):
+    return store_image(store.set_demo_image, demo_id, await read_upload(file), "Demo not found")
+
+
+@router.delete("/demos/{demo_id}/image")
+def remove_demo_image(demo_id: int):
+    updated = store.clear_demo_image(demo_id)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Demo not found")
+    return updated
+
+
 @router.delete("/demos/{demo_id}")
 def remove_demo(demo_id: int):
     deleted = store.delete_demo(demo_id)
@@ -108,6 +139,32 @@ def update_event(event_id: int, event: EventWrite):
         room=event.room,
         description=event.description,
     )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return updated
+
+
+@router.patch("/events/{event_id}/visibility")
+def set_event_visibility(event_id: int, payload: VisibilityWrite):
+    updated = store.set_event_hidden(event_id, payload.hidden)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return updated
+
+
+@router.get("/events/{event_id}/image")
+def read_event_image(event_id: int):
+    return image_response(store.get_event_image(event_id))
+
+
+@router.put("/events/{event_id}/image")
+async def upload_event_image(event_id: int, file: UploadFile = File(...)):
+    return store_image(store.set_event_image, event_id, await read_upload(file), "Event not found")
+
+
+@router.delete("/events/{event_id}/image")
+def remove_event_image(event_id: int):
+    updated = store.clear_event_image(event_id)
     if updated is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return updated

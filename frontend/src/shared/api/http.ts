@@ -21,7 +21,16 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new ApiError(`Request failed: ${response.status}`, response.status);
+    let message = `Request failed: ${response.status}`;
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === "string" && body.detail) {
+        message = body.detail;
+      }
+    } catch {
+      // Response had no JSON body.
+    }
+    throw new ApiError(message, response.status);
   }
 
   return (await response.json()) as T;

@@ -48,16 +48,14 @@
 .icon {
   position: relative;
   z-index: 1;
-  width: 2.7rem;
-  height: 2.7rem;
-  border-radius: 50%;
-  background: #fff;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: #fff;
 }
 
 .recording .icon {
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 0.55rem;
+  width: 2rem;
+  height: 2rem;
 }
 
 .error {

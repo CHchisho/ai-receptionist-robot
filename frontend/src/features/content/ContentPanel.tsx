@@ -3,34 +3,66 @@ import {
   createDemo,
   createEvent,
   deleteDemo,
+  deleteDemoImage,
   deleteEvent,
+  deleteEventImage,
   listDemos,
   listEvents,
+  setDemoHidden,
+  setEventHidden,
   updateDemo,
   updateEvent,
+  uploadDemoImage,
+  uploadEventImage,
   type DemoDraft,
   type DemoItem,
   type EventDraft,
   type EventItem,
 } from "@/features/content/api";
+import { ApiError } from "@/shared/api/http";
+import { IconEye, IconEyeSlash } from "@/shared/icons";
+import { PhotoFrame } from "@/shared/photos/PhotoFrame";
+import { EMPTY_PHOTO, PhotoPicker, type PhotoFields } from "@/shared/photos/PhotoPicker";
 import styles from "./ContentPanel.module.css";
 
-type DemoForm = {
+type DemoForm = PhotoFields & {
   title: string;
   description: string;
   location: string;
   url: string;
 };
 
-type EventForm = {
+type EventForm = PhotoFields & {
   title: string;
   eventTime: string;
   room: string;
   description: string;
 };
 
-const EMPTY_DEMO: DemoForm = { title: "", description: "", location: "", url: "" };
-const EMPTY_EVENT: EventForm = { title: "", eventTime: "", room: "", description: "" };
+const EMPTY_DEMO: DemoForm = { title: "", description: "", location: "", url: "", ...EMPTY_PHOTO };
+const EMPTY_EVENT: EventForm = { title: "", eventTime: "", room: "", description: "", ...EMPTY_PHOTO };
+
+async function applyPhoto<T>(
+  saved: T & { id: number },
+  form: PhotoFields,
+  upload: (id: number, file: File) => Promise<T>,
+  clear: (id: number) => Promise<T>,
+): Promise<T> {
+  if (form.photoFile) {
+    return upload(saved.id, form.photoFile);
+  }
+  if (form.photoRemoved && form.photoBaseline) {
+    return clear(saved.id);
+  }
+  return saved;
+}
+
+function photoError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+  return "Could not save the photo.";
+}
 
 function demoDraft(form: DemoForm): DemoDraft {
   return {
@@ -91,6 +123,9 @@ function DemoColumn() {
       description: item.description,
       location: item.location,
       url: item.url ?? "",
+      photoFile: null,
+      photoRemoved: false,
+      photoBaseline: item.image_url,
     });
     setError(null);
   }
@@ -107,12 +142,23 @@ function DemoColumn() {
     setError(null);
     try {
       const draft = demoDraft(form);
-      if (editingId !== null) {
-        const updated = await updateDemo(editingId, draft);
-        setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-      } else {
-        const created = await createDemo(draft);
-        setItems((current) => [created, ...current]);
+      const saved =
+        editingId !== null ? await updateDemo(editingId, draft) : await createDemo(draft);
+      const remember = (item: DemoItem) => {
+        setItems((current) => {
+          const exists = current.some((entry) => entry.id === item.id);
+          return exists ? current.map((entry) => (entry.id === item.id ? item : entry)) : [item, ...current];
+        });
+      };
+      remember(saved);
+      try {
+        remember(await applyPhoto(saved, form, uploadDemoImage, deleteDemoImage));
+      } catch (error) {
+        setCreating(false);
+        setEditingId(saved.id);
+        setForm((current) => ({ ...current, photoBaseline: saved.image_url }));
+        setError(photoError(error));
+        return;
       }
       cancelForm();
     } catch {
@@ -134,6 +180,32 @@ function DemoColumn() {
       setPendingDelete(null);
     } catch {
       setError("Could not delete this demo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmRemovePhoto(item: DemoItem) {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await deleteDemoImage(item.id);
+      setItems((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+    } catch (error) {
+      setError(photoError(error));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleHidden(item: DemoItem) {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await setDemoHidden(item.id, !item.hidden);
+      setItems((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+    } catch {
+      setError("Could not change visibility for this demo.");
     } finally {
       setSaving(false);
     }
@@ -186,39 +258,65 @@ function DemoColumn() {
               />
             </li>
           ) : (
-            <li key={item.id} className={styles.item}>
-              <div>
-                <h3 className={styles.name}>{item.title}</h3>
-                <p className={styles.meta}>{item.location}</p>
-              </div>
-              <p className={styles.detail}>{item.description}</p>
-              {item.url ? (
-                <a className={styles.link} href={item.url} target="_blank" rel="noreferrer">
-                  {item.url}
-                </a>
-              ) : null}
-              {pendingDelete?.id === item.id ? (
-                <div className={styles.confirm}>
-                  <p>Delete “{item.title}”? Lena will stop answering about this stand.</p>
-                  <div className={styles.formActions}>
-                    <button className={styles.danger} type="button" disabled={saving} onClick={() => void confirmDelete()}>
-                      Delete
-                    </button>
-                    <button className={styles.ghost} type="button" onClick={() => setPendingDelete(null)}>
-                      Cancel
-                    </button>
+            <li key={item.id} className={item.hidden ? `${styles.item} ${styles.itemHidden}` : styles.item}>
+              <div className={styles.itemRow}>
+                {item.image_url ? (
+                  <PhotoFrame url={item.image_url} disabled={saving} onRemove={() => void confirmRemovePhoto(item)} />
+                ) : null}
+                <div className={styles.itemBody}>
+                  <div>
+                    <h3 className={styles.name}>{item.title}</h3>
+                    <p className={styles.meta}>{item.location}</p>
                   </div>
+                  <p className={styles.detail}>{item.description}</p>
+                  {item.url ? (
+                    <a className={styles.link} href={item.url} target="_blank" rel="noreferrer">
+                      {item.url}
+                    </a>
+                  ) : null}
+                  {pendingDelete?.id === item.id ? (
+                    <div className={styles.confirm}>
+                      <p>Delete “{item.title}”? Lena will stop answering about this stand.</p>
+                      <div className={styles.formActions}>
+                        <button className={styles.danger} type="button" disabled={saving} onClick={() => void confirmDelete()}>
+                          Delete
+                        </button>
+                        <button className={styles.ghost} type="button" onClick={() => setPendingDelete(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.actions}>
+                      <button type="button" className={styles.textBtn} onClick={() => startEdit(item)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        disabled={saving}
+                        aria-label={
+                          item.hidden
+                            ? "Show again so Lena can use this item"
+                            : "Hide from Lena. She will not use this item."
+                        }
+                        title={
+                          item.hidden
+                            ? "Show again so Lena can use this item"
+                            : "Hide from Lena. She will not use this item."
+                        }
+                        onClick={() => void toggleHidden(item)}
+                      >
+                        {item.hidden ? <IconEye className={styles.icon} /> : <IconEyeSlash className={styles.icon} />}
+                        {item.hidden ? "Show" : "Hide"}
+                      </button>
+                      <button type="button" className={styles.textDanger} onClick={() => setPendingDelete(item)}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className={styles.actions}>
-                  <button type="button" className={styles.textBtn} onClick={() => startEdit(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className={styles.textDanger} onClick={() => setPendingDelete(item)}>
-                    Delete
-                  </button>
-                </div>
-              )}
+              </div>
             </li>
           ),
         )}
@@ -259,6 +357,9 @@ function EventColumn() {
       eventTime: item.event_time,
       room: item.room,
       description: item.description,
+      photoFile: null,
+      photoRemoved: false,
+      photoBaseline: item.image_url,
     });
     setError(null);
   }
@@ -275,12 +376,23 @@ function EventColumn() {
     setError(null);
     try {
       const draft = eventDraft(form);
-      if (editingId !== null) {
-        const updated = await updateEvent(editingId, draft);
-        setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-      } else {
-        const created = await createEvent(draft);
-        setItems((current) => [created, ...current]);
+      const saved =
+        editingId !== null ? await updateEvent(editingId, draft) : await createEvent(draft);
+      const remember = (item: EventItem) => {
+        setItems((current) => {
+          const exists = current.some((entry) => entry.id === item.id);
+          return exists ? current.map((entry) => (entry.id === item.id ? item : entry)) : [item, ...current];
+        });
+      };
+      remember(saved);
+      try {
+        remember(await applyPhoto(saved, form, uploadEventImage, deleteEventImage));
+      } catch (error) {
+        setCreating(false);
+        setEditingId(saved.id);
+        setForm((current) => ({ ...current, photoBaseline: saved.image_url }));
+        setError(photoError(error));
+        return;
       }
       cancelForm();
     } catch {
@@ -302,6 +414,32 @@ function EventColumn() {
       setPendingDelete(null);
     } catch {
       setError("Could not delete this event.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmRemovePhoto(item: EventItem) {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await deleteEventImage(item.id);
+      setItems((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+    } catch (error) {
+      setError(photoError(error));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleHidden(item: EventItem) {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await setEventHidden(item.id, !item.hidden);
+      setItems((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+    } catch {
+      setError("Could not change visibility for this event.");
     } finally {
       setSaving(false);
     }
@@ -354,36 +492,62 @@ function EventColumn() {
               />
             </li>
           ) : (
-            <li key={item.id} className={styles.item}>
-              <div>
-                <h3 className={styles.name}>{item.title}</h3>
-                <p className={styles.meta}>
-                  {item.event_time} · {item.room}
-                </p>
-              </div>
-              <p className={styles.detail}>{item.description}</p>
-              {pendingDelete?.id === item.id ? (
-                <div className={styles.confirm}>
-                  <p>Delete “{item.title}”? Lena will stop answering about this event.</p>
-                  <div className={styles.formActions}>
-                    <button className={styles.danger} type="button" disabled={saving} onClick={() => void confirmDelete()}>
-                      Delete
-                    </button>
-                    <button className={styles.ghost} type="button" onClick={() => setPendingDelete(null)}>
-                      Cancel
-                    </button>
+            <li key={item.id} className={item.hidden ? `${styles.item} ${styles.itemHidden}` : styles.item}>
+              <div className={styles.itemRow}>
+                {item.image_url ? (
+                  <PhotoFrame url={item.image_url} disabled={saving} onRemove={() => void confirmRemovePhoto(item)} />
+                ) : null}
+                <div className={styles.itemBody}>
+                  <div>
+                    <h3 className={styles.name}>{item.title}</h3>
+                    <p className={styles.meta}>
+                      {item.event_time} · {item.room}
+                    </p>
                   </div>
+                  <p className={styles.detail}>{item.description}</p>
+                  {pendingDelete?.id === item.id ? (
+                    <div className={styles.confirm}>
+                      <p>Delete “{item.title}”? Lena will stop answering about this event.</p>
+                      <div className={styles.formActions}>
+                        <button className={styles.danger} type="button" disabled={saving} onClick={() => void confirmDelete()}>
+                          Delete
+                        </button>
+                        <button className={styles.ghost} type="button" onClick={() => setPendingDelete(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.actions}>
+                      <button type="button" className={styles.textBtn} onClick={() => startEdit(item)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        disabled={saving}
+                        aria-label={
+                          item.hidden
+                            ? "Show again so Lena can use this item"
+                            : "Hide from Lena. She will not use this item."
+                        }
+                        title={
+                          item.hidden
+                            ? "Show again so Lena can use this item"
+                            : "Hide from Lena. She will not use this item."
+                        }
+                        onClick={() => void toggleHidden(item)}
+                      >
+                        {item.hidden ? <IconEye className={styles.icon} /> : <IconEyeSlash className={styles.icon} />}
+                        {item.hidden ? "Show" : "Hide"}
+                      </button>
+                      <button type="button" className={styles.textDanger} onClick={() => setPendingDelete(item)}>
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className={styles.actions}>
-                  <button type="button" className={styles.textBtn} onClick={() => startEdit(item)}>
-                    Edit
-                  </button>
-                  <button type="button" className={styles.textDanger} onClick={() => setPendingDelete(item)}>
-                    Delete
-                  </button>
-                </div>
-              )}
+              </div>
             </li>
           ),
         )}
@@ -463,6 +627,15 @@ function DemoFormFields({
         />
         <span className={styles.hint}>Optional. Shown next to the answer when Lena talks about this demo.</span>
       </div>
+      <PhotoPicker
+        idPrefix={idPrefix}
+        form={form}
+        fieldClass={styles.field}
+        fileClass={styles.file}
+        hintClass={styles.hint}
+        errorClass={styles.error}
+        onChange={(photo) => onChange({ ...form, ...photo })}
+      />
       <div className={styles.formActions}>
         <button className={styles.primary} type="submit" disabled={saving}>
           {saving ? "Saving…" : submitLabel}
@@ -548,6 +721,15 @@ function EventFormFields({
         />
         <span className={styles.hint}>Time and room are shown on the card. This text is what Lena is allowed to say.</span>
       </div>
+      <PhotoPicker
+        idPrefix={idPrefix}
+        form={form}
+        fieldClass={styles.field}
+        fileClass={styles.file}
+        hintClass={styles.hint}
+        errorClass={styles.error}
+        onChange={(photo) => onChange({ ...form, ...photo })}
+      />
       <div className={styles.formActions}>
         <button className={styles.primary} type="submit" disabled={saving}>
           {saving ? "Saving…" : submitLabel}
