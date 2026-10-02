@@ -110,6 +110,16 @@ frontend/src/
 
 `links` are approved URLs from retrieved sources (for QR). `sources` are the text chunks used as context.
 
+**Routing logic (demo/event matching):**
+
+`ask()` routes a question via `ConversationService._route()` in this order:
+
+1. **Navigation** — if question contains an indoor location name, return navigation card
+2. **Catalog** (demos/events) — if question matches a demo/event title, return the card without RAG
+3. **RAG** — search knowledge base for text context, pass to LLM
+
+Catalog matching uses partial keyword matching: "Energy demo" finds "Energy Management System" (via the keyword "energy"). Common stop words (the, a, and, in, etc.) are filtered out when determining if a title matches.
+
 **Voice input workflow:**
 
 `RecordButton` → `useMicrophone` captures audio via `MediaRecorder`
