@@ -148,7 +148,7 @@ class ConversationService:
         hit = self._catalog.find(question)
         if hit:
             return hit
-        if history:
+        if history and _is_referential(question):
             return self._catalog.find(f"{history[-1]['question']} {question}")
         return None
 

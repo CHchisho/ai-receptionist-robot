@@ -92,6 +92,7 @@ class QdrantRagProvider:
         )
         chunks: list[RetrievedChunk] = []
         for hit in results.points:
+            print(f"RAG result: score={hit.score} title={hit.payload.get('title')}")
             payload = hit.payload or {}
             chunks.append(
                 RetrievedChunk(

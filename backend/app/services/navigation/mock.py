@@ -49,6 +49,15 @@ DEFAULT_LOCATIONS = [
     ),
     (
         Location(
+            name="Room 201",
+            floor="1st floor, A-wing",
+            landmark="AI Workshop room",
+            directions="From the main entrance, go through the lounge and past the Innovation wall. Continue toward the meeting room area. Room 201 is the room used for the AI Workshop.",
+        ),
+        {"room 201", "room201", "201"},
+    ),
+    (
+        Location(
             name="Meeting room",
             floor="1st floor, A-wing",
             landmark="top-right corner near the stage",
