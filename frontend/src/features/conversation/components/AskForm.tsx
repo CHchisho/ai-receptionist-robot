@@ -5,9 +5,10 @@ import styles from "./AskForm.module.css";
 type Props = {
   disabled?: boolean;
   onAsk: (text: string) => void;
+  onDraftChange?: (text: string) => void;
 };
 
-export function AskForm({ disabled, onAsk }: Props) {
+export function AskForm({ disabled, onAsk, onDraftChange }: Props) {
   const [text, setText] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -27,7 +28,11 @@ export function AskForm({ disabled, onAsk }: Props) {
           id="question"
           className={styles.input}
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => {
+            const next = event.target.value;
+            setText(next);
+            onDraftChange?.(next);
+          }}
           placeholder="Type a question…"
           autoComplete="off"
           disabled={disabled}

@@ -1,17 +1,22 @@
 /**
- * Blocks ways to leave the kiosk page.
+ * Blocks ways to leave the kiosk page. Only active when `enabled` is true
+ * (the reception route). Admin keeps normal selection, menus, and links.
  *
  * Blocks:
  *  - context menu (long press → "Search Google", "Open in new tab")
- *  - text selection (also handled in CSS; this is an extra JS barrier)
+ *  - text selection (CSS class `kiosk-lock` on <html>)
  *  - clicks on external links (http/https/mailto/…); in-app SPA routes stay allowed
  *  - dragging text and links (drop into the address bar)
- *  - leaving the page via the address bar or a browser gesture (beforeunload)
  */
 import { useEffect } from "react";
 
-export function useKioskLock() {
+export function useKioskLock(enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return;
+
+    const root = document.documentElement;
+    root.classList.add("kiosk-lock");
+
     function handleContextMenu(e: MouseEvent) {
       e.preventDefault();
     }
@@ -34,23 +39,15 @@ export function useKioskLock() {
       e.preventDefault();
     }
 
-    // Extra barrier if the visitor tries to leave via the address bar or reload.
-    // On the tablet the main lock is still the OS kiosk mode.
-    function handleBeforeUnload(e: BeforeUnloadEvent) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-
     document.addEventListener("contextmenu", handleContextMenu);
     document.addEventListener("click", handleClick, true);
     document.addEventListener("dragstart", handleDragStart);
-    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
+      root.classList.remove("kiosk-lock");
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("click", handleClick, true);
       document.removeEventListener("dragstart", handleDragStart);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
+  }, [enabled]);
 }
