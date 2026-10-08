@@ -1,10 +1,8 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { FeedbackForm } from "@/features/feedback/components/FeedbackForm";
 import { VolumeControl } from "@/features/voice/components/VolumeControl";
-import { IconPenToSquare } from "@/shared/icons";
 import styles from "./ReceptionPage.module.css";
 
 type KioskMode = "chat" | "survey";
@@ -13,9 +11,6 @@ export function ReceptionPage() {
   const [kioskMode, setKioskMode] = useState<KioskMode>("chat");
   const [panelKey, setPanelKey] = useState(0);
   const conversation = useConversation();
-  const showNewChat =
-    kioskMode === "chat" &&
-    conversation.messages.some((message) => message.role === "user");
 
   function handleNewChat() {
     conversation.startNewChat();
@@ -40,9 +35,9 @@ export function ReceptionPage() {
 
   return (
     <main className={styles.page}>
-      <Link className={styles.adminLink} to="/admin">
+      {/* <Link className={styles.adminLink} to="/admin">
         Admin
-      </Link>
+      </Link> */}
 
       <header className={styles.header}>
         <div className={styles.brand}>
@@ -51,16 +46,6 @@ export function ReceptionPage() {
         </div>
         <div className={styles.side}>
           <VolumeControl />
-          {showNewChat ? (
-            <button
-              className={styles.newChat}
-              type="button"
-              onClick={handleNewChat}
-              aria-label="New chat"
-            >
-              <IconPenToSquare className={styles.newChatIcon} />
-            </button>
-          ) : null}
         </div>
       </header>
 
@@ -71,6 +56,7 @@ export function ReceptionPage() {
           key={panelKey}
           conversation={conversation}
           onIdleTimeout={handleNewChat}
+          onNewChat={handleNewChat}
         />
       )}
     </main>

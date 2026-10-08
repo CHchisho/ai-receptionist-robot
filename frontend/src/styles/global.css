@@ -15,7 +15,14 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  /* Kiosk: no text selection, so "Search Google" never appears */
+}
+
+/* Reception only: class is toggled by useKioskLock on "/" */
+html.kiosk-lock,
+html.kiosk-lock *,
+html.kiosk-lock *::before,
+html.kiosk-lock *::after {
+  /* No text selection, so "Search Google" never appears */
   -webkit-user-select: none;
   user-select: none;
   /* iOS/Android: hide the long-press callout menu */
@@ -23,9 +30,9 @@
 }
 
 /* Allow selection in form fields so typing still works */
-input,
-textarea,
-[contenteditable] {
+html.kiosk-lock input,
+html.kiosk-lock textarea,
+html.kiosk-lock [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
 }

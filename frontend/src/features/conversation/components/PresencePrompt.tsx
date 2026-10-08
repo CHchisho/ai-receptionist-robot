@@ -24,6 +24,11 @@ export function PresencePrompt({
   onTimeoutRef.current = onTimeout;
 
   useEffect(() => {
+    sessionRef.current += 1;
+    setOpen(false);
+  }, [resetKey]);
+
+  useEffect(() => {
     if (!active || open) {
       return;
     }
