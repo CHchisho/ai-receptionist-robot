@@ -36,9 +36,9 @@ export function ReceptionPage() {
 
   return (
     <main className={styles.page}>
-      <Link className={styles.adminLink} to="/admin">
+      {/* <Link className={styles.adminLink} to="/admin">
         Admin
-      </Link>
+      </Link> */}
 
       <header className={styles.header}>
         <div className={styles.brand}>
