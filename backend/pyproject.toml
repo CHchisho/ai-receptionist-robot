@@ -21,6 +21,9 @@ dev = [
     "httpx>=0.27.0",
     "pytest>=8.3.0",
 ]
+chatterbox = [
+    "chatterbox-tts==0.1.7",
+]
 
 [build-system]
 requires = ["setuptools>=68"]

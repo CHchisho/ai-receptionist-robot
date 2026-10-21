@@ -50,9 +50,15 @@ Set `LLM_PROVIDER=ollama` and install [Ollama](https://ollama.com) locally. On A
 
 `STT_PROVIDER=mock` needs nothing extra. For real transcription install `ffmpeg` on `PATH`, then set `STT_PROVIDER=whisper`. The model downloads from Hugging Face on first load (`WHISPER_MODEL_SIZE=small`). Whisper chooses the language itself.
 
+#### TTS_PROVIDER=chatterbox
+
+Default speech provider. `TTS_PROVIDER=chatterbox` loads Chatterbox Multilingual V3 (one voice for Finnish, English, and the other languages the model supports). Weights download from Hugging Face on first startup into `HF_HOME`. Install the extra before running outside Docker: `pip install -e ".[chatterbox]"`.
+
+`CHATTERBOX_DEVICE=auto` uses CUDA when PyTorch can see a GPU, otherwise CPU. Docker Compose takes this value from `.env` and does not override it. Leave `CHATTERBOX_REFERENCE_WAV` empty to clone the female Piper Lessac voice (saved next to the English Piper model). Point it at a ~10 second recording to clone a different speaker. `CHATTERBOX_CFG_WEIGHT=0` keeps that voice from copying the reference clip's accent into Finnish.
+
 #### TTS_PROVIDER=piper
 
-`TTS_PROVIDER=mock` needs nothing extra. For real speech set `TTS_PROVIDER=piper`, `PIPER_MODEL_PATH` (English) and `PIPER_MODEL_PATH_FI` (Finnish). Missing `.onnx` / `.onnx.json` files are downloaded on startup from each path's file name (`en_US-lessac-medium`, `fi_FI-harri-medium`). Both voices stay in the same Piper directory.
+`TTS_PROVIDER=mock` needs nothing extra. For the previous voices set `TTS_PROVIDER=piper`, `PIPER_MODEL_PATH` (English) and `PIPER_MODEL_PATH_FI` (Finnish). Missing `.onnx` / `.onnx.json` files are downloaded on startup from each path's file name (`en_US-lessac-medium`, `fi_FI-harri-medium`). Both voices stay in the same Piper directory.
 
 ### Frontend
 
@@ -79,7 +85,7 @@ backend/app/
     llm/           base + mock + Ollama (`LLM_PROVIDER=ollama`)
     rag/           base + mock + Qdrant (`RAG_PROVIDER=qdrant`)
     stt/           base + mock + faster-whisper (`STT_PROVIDER=whisper`)
-    tts/           base + mock + Piper (`TTS_PROVIDER=piper`)
+    tts/           base + mock + Piper (`TTS_PROVIDER=piper`) + Chatterbox (`TTS_PROVIDER=chatterbox`)
     navigation/    structured indoor directions (later)
 ```
 

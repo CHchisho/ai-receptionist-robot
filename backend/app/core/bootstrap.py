@@ -38,6 +38,13 @@ def bootstrap() -> None:
 
         get_tts_provider()
 
+    if settings.tts_provider == "chatterbox":
+        logger.info(
+            "Preparing Chatterbox Multilingual V3 (device=%s)",
+            settings.chatterbox_device,
+        )
+        get_tts_provider()
+
     if settings.stt_provider == "whisper":
         logger.info("Loading Whisper model '%s'", settings.whisper_model_size)
         get_stt_provider()

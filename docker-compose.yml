@@ -1,5 +1,5 @@
 # Development stack: frontend + backend + Ollama + Qdrant.
-# First start downloads the configured Ollama / Whisper / Piper / embedding models into volumes.
+# First start downloads the configured Ollama / Whisper / Chatterbox / embedding models into volumes.
 
 services:
   ollama:
@@ -53,7 +53,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 300s
+      start_period: 600s
 
   frontend:
     build:

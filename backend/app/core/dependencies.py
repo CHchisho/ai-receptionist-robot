@@ -20,7 +20,7 @@ from app.services.tts.mock import MockTtsProvider
 def get_tts_provider() -> TtsProvider:
     """Build the TTS provider used to synthesize speech.
 
-    Cached so the Piper voice model is loaded once per process, not per request.
+    Cached so the voice model is loaded once per process, not per request.
     """
     if settings.tts_provider == "piper":
         from app.services.tts.piper import PiperTtsProvider  # imported lazily so mock mode needs no model deps
@@ -28,6 +28,16 @@ def get_tts_provider() -> TtsProvider:
         return PiperTtsProvider(
             model_path_en=settings.piper_model_path,
             model_path_fi=settings.piper_model_path_fi,
+        )
+    if settings.tts_provider == "chatterbox":
+        from app.services.tts.chatterbox import ChatterboxTtsProvider
+
+        return ChatterboxTtsProvider(
+            device=settings.chatterbox_device,
+            reference_wav=settings.chatterbox_reference_wav,
+            piper_model_path=settings.piper_model_path,
+            exaggeration=settings.chatterbox_exaggeration,
+            cfg_weight=settings.chatterbox_cfg_weight,
         )
     if settings.tts_provider != "mock":
         raise RuntimeError(f"TTS provider '{settings.tts_provider}' is not wired yet")
