@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
     piper_model_path_fi: str = "models/piper/fi_FI-harri-medium.onnx"
 
+    # auto uses CUDA when torch can see a GPU, otherwise CPU.
+    chatterbox_device: str = "auto"
+    # Empty uses the voice baked into the Chatterbox checkpoint.
+    chatterbox_reference_wav: str = ""
+    chatterbox_exaggeration: float = 0.5
+    # 0 keeps one speaker from dragging the reference language's accent into Finnish.
+    chatterbox_cfg_weight: float = 0.0
+
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_collection: str = "lena_knowledge"
     ollama_embed_model: str = "nomic-embed-text"

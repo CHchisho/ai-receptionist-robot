@@ -106,17 +106,15 @@ export function useConversation() {
       // Playback issues should not block the conversation.
     } finally {
       removeProgressListener?.();
-
-      if (playbackRef.current === playback) {
-        playbackRef.current = null;
-      }
     }
 
-    if (!messageId || playbackRef.current !== null) {
+    if (playbackRef.current !== playback) {
       return;
     }
 
-    if (completed) {
+    playbackRef.current = null;
+
+    if (completed && messageId) {
       setAudioProgress(100);
       await waitForNextPaint();
 
@@ -125,8 +123,11 @@ export function useConversation() {
       }
     }
 
-    setPlayingMessageId((current) => (current === messageId ? null : current));
-    setAudioProgress(0);
+    if (messageId) {
+      setPlayingMessageId((current) => (current === messageId ? null : current));
+      setAudioProgress(0);
+    }
+    setStatus((current) => (current === "speaking" ? "idle" : current));
   }
 
   async function ask(text: string, language = "en") {

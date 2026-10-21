@@ -37,3 +37,5 @@ knowledge/*.sqlite
 knowledge/*.sqlite-*
 backend/app/data/feedback.json
 backend/app/data/feedback.db
+
+SETUP.md

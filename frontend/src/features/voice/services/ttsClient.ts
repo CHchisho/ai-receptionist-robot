@@ -139,6 +139,9 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
       if (activeAudioElement === audio) {
         activeAudioElement = null;
       }
+      if (activeAudioStop === stop) {
+        activeAudioStop = null;
+      }
     }
 
     function notifyProgress(progress: number) {
@@ -155,8 +158,23 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
       notifyProgress(Math.min((audio.currentTime / audio.duration) * 100, 100));
     }
 
+    function reachedEnd() {
+      if (audio.ended) {
+        return true;
+      }
+      return (
+        Number.isFinite(audio.duration) &&
+        audio.duration > 0 &&
+        audio.currentTime >= audio.duration - 0.15
+      );
+    }
+
     function trackProgress() {
       readProgress();
+      if (reachedEnd()) {
+        finish(true);
+        return;
+      }
       progressFrame = requestAnimationFrame(trackProgress);
     }
 
