@@ -123,6 +123,45 @@ def test_ask_prefers_navigation_over_rag() -> None:
     assert len(llm.calls) == 1
 
 
+def test_ask_expands_venue_name_before_tts() -> None:
+    class ShortNameLlm:
+        def generate(
+            self,
+            question: str,
+            context: list,
+            history: list | None = None,
+            language: str = "en",
+        ) -> str:
+            return "The demo is in the Innovation Garage."
+
+    class RecordingTts:
+        def __init__(self) -> None:
+            self.text = None
+
+        def synthesize(self, text: str, language: str) -> bytes:
+            self.text = text
+            return b""
+
+    tts = RecordingTts()
+    result = _service(
+        llm=ShortNameLlm(),
+        rag=FakeRag(
+            [
+                RetrievedChunk(
+                    source_id="garage",
+                    title="Venue",
+                    snippet="Demos are shown in the Innovation Garage.",
+                )
+            ]
+        ),
+        tts=tts,
+    ).ask(AskRequest(text="Where is the demo?"))
+
+    expected = "The demo is in the Nokia Espoo Innovation Garage."
+    assert result.answer == expected
+    assert tts.text == expected
+
+
 def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
     class FakeTtsProvider:
         def synthesize(self, text: str, language: str) -> bytes:
