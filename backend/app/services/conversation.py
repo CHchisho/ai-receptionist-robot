@@ -18,6 +18,7 @@ from app.services.llm.prompt import SYSTEM_PROMPT, UNKNOWN_BY_LANGUAGE, build_us
 from app.services.navigation.base import Location, NavigationProvider
 from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
+from app.services.venue_name import expand_official_venue_name
 
 SUPPORTED_LANGUAGES = {"en", "fi"}
 
@@ -75,6 +76,7 @@ class ConversationService:
                 f"I'll answer in English. {answer}"
             )
 
+        answer = expand_official_venue_name(answer)
         audio = self._tts.synthesize(
             answer,
             language=language,
