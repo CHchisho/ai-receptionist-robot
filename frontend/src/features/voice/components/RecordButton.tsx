@@ -2,6 +2,7 @@ import { useState } from "react";
 import { IconMicrophone, IconStop } from "@/shared/icons";
 import { useMicrophone } from "@/features/voice/hooks/useMicrophone";
 import { transcribeAudio } from "@/features/voice/services/sttClient";
+import { unlockAudio } from "@/features/voice/services/ttsClient";
 import styles from "./RecordButton.module.css";
 
 type Props = {
@@ -32,6 +33,8 @@ export function RecordButton({
     if (disabled || state === "processing") {
       return;
     }
+
+    unlockAudio();
 
     if (state === "idle") {
       setError(null);
