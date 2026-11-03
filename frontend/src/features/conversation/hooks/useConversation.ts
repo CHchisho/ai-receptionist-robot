@@ -3,11 +3,13 @@ import { askQuestion } from "@/features/conversation/api";
 import type { ChatLink, ChatMessage } from "@/features/conversation/types";
 import {
   createAudioPlayback,
-  synthesizeSpeech,
+  loadWelcomeSpeech,
+  peekWelcomeSpeech,
   type AudioPlayback,
 } from "@/features/voice/services/ttsClient";
 import type { UiState } from "@/shared/types/ui";
 
+// Keep in sync with WELCOME_TEXT in backend/app/services/tts/welcome.py.
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
@@ -15,6 +17,15 @@ const WELCOME_MESSAGE: ChatMessage = {
     "Hello, I am Lena. Ask me about Nokia Espoo, the Innovation Garage, or how to find your way.",
   createdAt: new Date().toISOString(),
 };
+
+function welcomeMessage(createdAt = new Date().toISOString()): ChatMessage {
+  const audioBase64 = peekWelcomeSpeech();
+  return {
+    ...WELCOME_MESSAGE,
+    createdAt,
+    ...(audioBase64 ? { audioBase64 } : {}),
+  };
+}
 
 function createId() {
   return crypto.randomUUID();
@@ -33,8 +44,8 @@ function waitForNextPaint() {
 }
 
 export function useConversation() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    WELCOME_MESSAGE,
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    welcomeMessage(),
   ]);
   const [status, setStatus] = useState<UiState>("welcome");
   const [sessionId, setSessionId] = useState<string | undefined>();
@@ -71,6 +82,29 @@ export function useConversation() {
   useEffect(() => {
     return () => {
       cancelActiveWork();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadWelcomeSpeech(WELCOME_MESSAGE.content)
+      .then((audioBase64) => {
+        if (cancelled || !audioBase64) {
+          return;
+        }
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === "welcome" && !message.audioBase64
+              ? { ...message, audioBase64 }
+              : message,
+          ),
+        );
+      })
+      .catch(() => {
+        // A later tap retries. The playback error is shown then.
+      });
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -237,16 +271,13 @@ export function useConversation() {
     }
 
     const attempt = ++welcomeAttemptRef.current;
-    const request = beginRequest();
+    beginRequest();
     welcomeStartedRef.current = true;
     setError(null);
     setStatus("processing");
 
     try {
-      const audioBase64 = await synthesizeSpeech(
-        WELCOME_MESSAGE.content,
-        request.signal,
-      );
+      const audioBase64 = await loadWelcomeSpeech(WELCOME_MESSAGE.content);
       if (welcomeAttemptRef.current !== attempt) {
         return;
       }
@@ -290,9 +321,7 @@ export function useConversation() {
     stopSpeaking();
     welcomeStartedRef.current = false;
     welcomeSpokenRef.current = false;
-    setMessages([
-      { ...WELCOME_MESSAGE, createdAt: new Date().toISOString() },
-    ]);
+    setMessages([welcomeMessage()]);
     setSessionId(undefined);
     setError(null);
     setWelcomeSpoken(false);
@@ -331,14 +360,11 @@ export function useConversation() {
 
     void (async () => {
       const attempt = ++welcomeAttemptRef.current;
-      const request = beginRequest();
+      beginRequest();
       setError(null);
       setStatus("processing");
       try {
-        const audioBase64 = await synthesizeSpeech(
-          WELCOME_MESSAGE.content,
-          request.signal,
-        );
+        const audioBase64 = await loadWelcomeSpeech(WELCOME_MESSAGE.content);
         if (welcomeAttemptRef.current !== attempt) {
           return;
         }

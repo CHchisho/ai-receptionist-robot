@@ -8,6 +8,7 @@ from app.schemas.conversation import AskRequest, AskResponse, SpeakRequest, Spea
 from app.services.conversation import ConversationService
 from app.services.stt.base import SttProvider
 from app.services.tts.base import TtsProvider
+from app.services.tts.welcome import cached_welcome_audio
 
 router = APIRouter()
 
@@ -25,7 +26,8 @@ def speak(
     payload: SpeakRequest,
     tts: TtsProvider = Depends(get_tts_provider),
 ) -> SpeakResponse:
-    audio = tts.synthesize(payload.text, language=payload.language)
+    cached = cached_welcome_audio(payload.text, payload.language)
+    audio = cached if cached is not None else tts.synthesize(payload.text, language=payload.language)
     return SpeakResponse(
         audio_base64=base64.b64encode(audio).decode("ascii") if audio else None,
     )

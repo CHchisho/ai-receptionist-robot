@@ -203,6 +203,34 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
   };
 }
 
+let welcomeAudioPromise: Promise<string | null> | null = null;
+let welcomeAudioReady = false;
+let welcomeAudioValue: string | null = null;
+
+/** Prepared opening line. Shared so a reload prefetch and a tap share one request. */
+export function loadWelcomeSpeech(text: string): Promise<string | null> {
+  if (welcomeAudioReady) {
+    return Promise.resolve(welcomeAudioValue);
+  }
+  if (!welcomeAudioPromise) {
+    welcomeAudioPromise = synthesizeSpeech(text)
+      .then((audio) => {
+        welcomeAudioValue = audio;
+        welcomeAudioReady = true;
+        return audio;
+      })
+      .catch((error: unknown) => {
+        welcomeAudioPromise = null;
+        throw error;
+      });
+  }
+  return welcomeAudioPromise;
+}
+
+export function peekWelcomeSpeech(): string | null {
+  return welcomeAudioReady ? welcomeAudioValue : null;
+}
+
 export async function synthesizeSpeech(
   text: string,
   signal?: AbortSignal,
