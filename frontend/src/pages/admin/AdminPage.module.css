@@ -106,7 +106,44 @@
 }
 
 .modeCard {
-  max-width: 32rem;
+  max-width: 40rem;
+}
+
+.modeCard + .modeCard {
+  margin-top: 1rem;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 6.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: #fff;
+  font: inherit;
+  line-height: 1.45;
+  color: inherit;
+  resize: vertical;
+}
+
+.welcomeActions {
+  margin-top: 0.75rem;
+}
+
+.saveButton {
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--color-accent);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .modeButtons {

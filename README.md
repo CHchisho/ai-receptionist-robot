@@ -70,7 +70,7 @@ npm run dev
 
 Open http://localhost:5173
 
-Staff: http://localhost:5173/admin — knowledge sources (add/remove file or URL, reindex, view chunks), chat history, and visitor feedback. App SQLite: `knowledge/app.sqlite`.
+Staff: http://localhost:5173/admin — basic settings (reception mode and Lena's welcome message), knowledge sources (add/remove file or URL, reindex, view chunks), chat history, and visitor feedback. App SQLite: `knowledge/app.sqlite`.
 
 Vite proxies `/api` to the backend (`VITE_API_PROXY_TARGET`, default `http://localhost:8000`).
 

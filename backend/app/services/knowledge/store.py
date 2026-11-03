@@ -9,6 +9,11 @@ from pathlib import Path
 
 from app.core.config import settings
 
+DEFAULT_WELCOME_TEXT = (
+    "Hello, I am Lena. Ask me about Nokia Espoo, the Innovation Garage, "
+    "or how to find your way."
+)
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -83,7 +88,8 @@ def _init(connection: sqlite3.Connection) -> None:
         );
         CREATE TABLE IF NOT EXISTS kiosk_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
-            mode TEXT NOT NULL DEFAULT 'chat'
+            mode TEXT NOT NULL DEFAULT 'chat',
+            welcome_text TEXT
         );
         INSERT OR IGNORE INTO kiosk_settings (id, mode)
         VALUES (1, 'chat');
@@ -115,8 +121,15 @@ def _init(connection: sqlite3.Connection) -> None:
         """
     )
     _ensure_image_columns(connection)
+    _ensure_kiosk_columns(connection)
     _seed_locations(connection)
     connection.commit()
+
+
+def _ensure_kiosk_columns(connection: sqlite3.Connection) -> None:
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(kiosk_settings)")}
+    if "welcome_text" not in existing:
+        connection.execute("ALTER TABLE kiosk_settings ADD COLUMN welcome_text TEXT")
 
 
 def _ensure_image_columns(connection: sqlite3.Connection) -> None:
@@ -741,6 +754,30 @@ def set_kiosk_mode(mode: str) -> str:
         )
         connection.commit()
     return mode
+
+
+def get_welcome_text() -> str:
+    with connect() as connection:
+        row = connection.execute(
+            "SELECT welcome_text FROM kiosk_settings WHERE id = 1"
+        ).fetchone()
+    if row is None:
+        return DEFAULT_WELCOME_TEXT
+    stored = row["welcome_text"]
+    if not isinstance(stored, str) or not stored.strip():
+        return DEFAULT_WELCOME_TEXT
+    return stored.strip()
+
+
+def set_welcome_text(text: str) -> str:
+    cleaned = text.strip()
+    with connect() as connection:
+        connection.execute(
+            "UPDATE kiosk_settings SET welcome_text = ? WHERE id = 1",
+            (cleaned,),
+        )
+        connection.commit()
+    return cleaned
 
 
 @dataclass(frozen=True)

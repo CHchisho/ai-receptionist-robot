@@ -3,27 +3,28 @@ import { askQuestion } from "@/features/conversation/api";
 import type { ChatLink, ChatMessage } from "@/features/conversation/types";
 import {
   createAudioPlayback,
+  fetchPreparedWelcome,
   loadWelcomeSpeech,
-  peekWelcomeSpeech,
   type AudioPlayback,
 } from "@/features/voice/services/ttsClient";
 import type { UiState } from "@/shared/types/ui";
 
-// Keep in sync with WELCOME_TEXT in backend/app/services/tts/welcome.py.
-const WELCOME_MESSAGE: ChatMessage = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "Hello, I am Lena. Ask me about Nokia Espoo, the Innovation Garage, or how to find your way.",
-  createdAt: new Date().toISOString(),
+type WelcomeClip = {
+  content: string;
+  audioBase64: string | null;
 };
 
-function welcomeMessage(createdAt = new Date().toISOString()): ChatMessage {
-  const audioBase64 = peekWelcomeSpeech();
+function welcomeMessage(
+  clip: WelcomeClip,
+  createdAt = new Date().toISOString(),
+): ChatMessage {
   return {
-    ...WELCOME_MESSAGE,
+    id: "welcome",
+    role: "assistant",
+    content: clip.content,
     createdAt,
-    ...(audioBase64 ? { audioBase64 } : {}),
+    pending: clip.content.length === 0,
+    ...(clip.audioBase64 ? { audioBase64: clip.audioBase64 } : {}),
   };
 }
 
@@ -44,8 +45,12 @@ function waitForNextPaint() {
 }
 
 export function useConversation() {
+  const welcomeClipRef = useRef<WelcomeClip>({
+    content: "",
+    audioBase64: null,
+  });
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    welcomeMessage(),
+    welcomeMessage(welcomeClipRef.current),
   ]);
   const [status, setStatus] = useState<UiState>("welcome");
   const [sessionId, setSessionId] = useState<string | undefined>();
@@ -87,21 +92,27 @@ export function useConversation() {
 
   useEffect(() => {
     let cancelled = false;
-    void loadWelcomeSpeech(WELCOME_MESSAGE.content)
-      .then((audioBase64) => {
-        if (cancelled || !audioBase64) {
+    void fetchPreparedWelcome()
+      .then((welcome) => {
+        if (cancelled) {
           return;
         }
+        welcomeClipRef.current = {
+          content: welcome.text,
+          audioBase64: welcome.audioBase64,
+        };
         setMessages((current) =>
           current.map((message) =>
-            message.id === "welcome" && !message.audioBase64
-              ? { ...message, audioBase64 }
+            message.id === "welcome"
+              ? welcomeMessage(welcomeClipRef.current, message.createdAt)
               : message,
           ),
         );
       })
       .catch(() => {
-        // A later tap retries. The playback error is shown then.
+        if (!cancelled) {
+          setError("Could not load the welcome message.");
+        }
       });
     return () => {
       cancelled = true;
@@ -276,8 +287,15 @@ export function useConversation() {
     setError(null);
     setStatus("processing");
 
+    const welcomeText = welcomeClipRef.current.content;
+    if (!welcomeText) {
+      welcomeStartedRef.current = false;
+      setStatus("idle");
+      return;
+    }
+
     try {
-      const audioBase64 = await loadWelcomeSpeech(WELCOME_MESSAGE.content);
+      const audioBase64 = await loadWelcomeSpeech(welcomeText);
       if (welcomeAttemptRef.current !== attempt) {
         return;
       }
@@ -321,7 +339,7 @@ export function useConversation() {
     stopSpeaking();
     welcomeStartedRef.current = false;
     welcomeSpokenRef.current = false;
-    setMessages([welcomeMessage()]);
+    setMessages([welcomeMessage(welcomeClipRef.current)]);
     setSessionId(undefined);
     setError(null);
     setWelcomeSpoken(false);
@@ -364,7 +382,12 @@ export function useConversation() {
       setError(null);
       setStatus("processing");
       try {
-        const audioBase64 = await loadWelcomeSpeech(WELCOME_MESSAGE.content);
+        const welcomeText = welcomeClipRef.current.content;
+        if (!welcomeText) {
+          setStatus("idle");
+          return;
+        }
+        const audioBase64 = await loadWelcomeSpeech(welcomeText);
         if (welcomeAttemptRef.current !== attempt) {
           return;
         }

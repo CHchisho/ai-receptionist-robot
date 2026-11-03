@@ -203,32 +203,41 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
   };
 }
 
-let welcomeAudioPromise: Promise<string | null> | null = null;
-let welcomeAudioReady = false;
-let welcomeAudioValue: string | null = null;
+const welcomeAudioByText = new Map<string, Promise<string | null>>();
 
-/** Prepared opening line. Shared so a reload prefetch and a tap share one request. */
-export function loadWelcomeSpeech(text: string): Promise<string | null> {
-  if (welcomeAudioReady) {
-    return Promise.resolve(welcomeAudioValue);
+export type PreparedWelcome = {
+  text: string;
+  audioBase64: string | null;
+};
+
+/** Opening line saved in admin, including the clip prepared at startup. */
+export async function fetchPreparedWelcome(): Promise<PreparedWelcome> {
+  const response = await fetch(`${env.apiBaseUrl}/api/v1/kiosk/welcome`);
+  if (!response.ok) {
+    throw new Error(`Welcome message failed: ${response.status}`);
   }
-  if (!welcomeAudioPromise) {
-    welcomeAudioPromise = synthesizeSpeech(text)
-      .then((audio) => {
-        welcomeAudioValue = audio;
-        welcomeAudioReady = true;
-        return audio;
-      })
-      .catch((error: unknown) => {
-        welcomeAudioPromise = null;
-        throw error;
-      });
-  }
-  return welcomeAudioPromise;
+  const data = (await response.json()) as {
+    text: string;
+    audio_base64: string | null;
+  };
+  return {
+    text: data.text,
+    audioBase64: data.audio_base64,
+  };
 }
 
-export function peekWelcomeSpeech(): string | null {
-  return welcomeAudioReady ? welcomeAudioValue : null;
+/** One request per wording, shared by a tap that arrives before playback is ready. */
+export function loadWelcomeSpeech(text: string): Promise<string | null> {
+  const pending = welcomeAudioByText.get(text);
+  if (pending) {
+    return pending;
+  }
+  const request = synthesizeSpeech(text).catch((error: unknown) => {
+    welcomeAudioByText.delete(text);
+    throw error;
+  });
+  welcomeAudioByText.set(text, request);
+  return request;
 }
 
 export async function synthesizeSpeech(

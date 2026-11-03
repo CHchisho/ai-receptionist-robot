@@ -8,10 +8,10 @@ import { MapPanel } from "@/features/map/MapPanel";
 import styles from "./AdminPage.module.css";
 
 type KioskMode = "chat" | "survey";
-type AdminSection = "mode" | "content" | "sources" | "map" | "history" | "feedback";
+type AdminSection = "settings" | "content" | "sources" | "map" | "history" | "feedback";
 
 const SECTIONS: { id: AdminSection; label: string }[] = [
-  { id: "mode", label: "Reception mode" },
+  { id: "settings", label: "Basic settings" },
   { id: "content", label: "Demos & events" },
   { id: "sources", label: "Knowledge sources" },
   { id: "map", label: "Map" },
@@ -22,24 +22,29 @@ const SECTIONS: { id: AdminSection; label: string }[] = [
 export function AdminPage() {
   const [kioskMode, setKioskMode] = useState<KioskMode>("chat");
   const [kioskError, setKioskError] = useState<string | null>(null);
-  const [section, setSection] = useState<AdminSection>("mode");
+  const [welcomeText, setWelcomeText] = useState("");
+  const [savedWelcome, setSavedWelcome] = useState("");
+  const [welcomeError, setWelcomeError] = useState<string | null>(null);
+  const [welcomeSaving, setWelcomeSaving] = useState(false);
+  const [section, setSection] = useState<AdminSection>("settings");
 
   useEffect(() => {
-    fetch("/api/v1/kiosk/mode")
+    fetch("/api/v1/kiosk/settings")
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Failed to load kiosk mode");
+          throw new Error("Failed to load kiosk settings");
         }
         return response.json();
       })
-      .then((data: { mode: KioskMode }) => {
+      .then((data: { mode: KioskMode; welcome_text: string }) => {
         setKioskMode(data.mode);
+        setWelcomeText(data.welcome_text);
+        setSavedWelcome(data.welcome_text);
         setKioskError(null);
       })
       .catch(() => {
-        setKioskError("Could not load reception mode.");
+        setKioskError("Could not load basic settings.");
       });
-
   }, []);
 
   function updateKioskMode(mode: KioskMode) {
@@ -62,6 +67,37 @@ export function AdminPage() {
       })
       .catch(() => {
         setKioskError("Could not update reception mode.");
+      });
+  }
+
+  function saveWelcome() {
+    const text = welcomeText.trim();
+    if (!text || text === savedWelcome || welcomeSaving) {
+      return;
+    }
+    setWelcomeSaving(true);
+    setWelcomeError(null);
+    fetch("/api/v1/kiosk/welcome", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update welcome message");
+        }
+        return response.json();
+      })
+      .then((data: { text: string }) => {
+        setWelcomeText(data.text);
+        setSavedWelcome(data.text);
+        setWelcomeSaving(false);
+      })
+      .catch(() => {
+        setWelcomeSaving(false);
+        setWelcomeError("Could not save the welcome message.");
       });
   }
 
@@ -102,33 +138,65 @@ export function AdminPage() {
         id={`admin-panel-${section}`}
         aria-labelledby={`admin-tab-${section}`}
       >
-        {section === "mode" ? (
-          <section className={`${styles.card} ${styles.modeCard}`}>
-            <h2 className={styles.cardTitle}>Reception mode</h2>
-            <p className={styles.copy}>
-              Choose what visitors see on the reception tablet.
-            </p>
+        {section === "settings" ? (
+          <>
+            <section className={`${styles.card} ${styles.modeCard}`}>
+              <h2 className={styles.cardTitle}>Reception mode</h2>
+              <p className={styles.copy}>
+                Choose what visitors see on the reception tablet.
+              </p>
 
-            <div className={styles.modeButtons}>
-              <button
-                type="button"
-                className={kioskMode === "chat" ? styles.activeMode : styles.modeButton}
-                onClick={() => updateKioskMode("chat")}
-              >
-                Chat
-              </button>
+              <div className={styles.modeButtons}>
+                <button
+                  type="button"
+                  className={kioskMode === "chat" ? styles.activeMode : styles.modeButton}
+                  onClick={() => updateKioskMode("chat")}
+                >
+                  Chat
+                </button>
 
-              <button
-                type="button"
-                className={kioskMode === "survey" ? styles.activeMode : styles.modeButton}
-                onClick={() => updateKioskMode("survey")}
-              >
-                Survey
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className={kioskMode === "survey" ? styles.activeMode : styles.modeButton}
+                  onClick={() => updateKioskMode("survey")}
+                >
+                  Survey
+                </button>
+              </div>
 
-            {kioskError ? <p className={styles.error}>{kioskError}</p> : null}
-          </section>
+              {kioskError ? <p className={styles.error}>{kioskError}</p> : null}
+            </section>
+
+            <section className={`${styles.card} ${styles.modeCard}`}>
+              <h2 className={styles.cardTitle}>Welcome message</h2>
+              <p className={styles.copy}>
+                Lena says this first. Saving prepares the voice clip again, so it can take a moment.
+              </p>
+              <textarea
+                className={styles.textarea}
+                value={welcomeText}
+                maxLength={1000}
+                rows={4}
+                aria-label="Welcome message"
+                onChange={(event) => setWelcomeText(event.target.value)}
+              />
+              <div className={styles.welcomeActions}>
+                <button
+                  type="button"
+                  className={styles.saveButton}
+                  disabled={
+                    welcomeSaving ||
+                    welcomeText.trim().length === 0 ||
+                    welcomeText.trim() === savedWelcome
+                  }
+                  onClick={saveWelcome}
+                >
+                  {welcomeSaving ? "Preparing voice…" : "Save welcome"}
+                </button>
+              </div>
+              {welcomeError ? <p className={styles.error}>{welcomeError}</p> : null}
+            </section>
+          </>
         ) : null}
 
         {section === "content" ? <ContentPanel /> : null}
