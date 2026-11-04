@@ -46,6 +46,19 @@ function waitForNextPaint() {
   });
 }
 
+type SpeechSegment = {
+  index: number;
+  total: number;
+};
+
+function overallProgress(segment: SpeechSegment, clipProgress: number) {
+  if (segment.total <= 1) {
+    return clipProgress;
+  }
+  const share = Math.min(Math.max(clipProgress, 0), 100) / 100;
+  return ((segment.index + share) / segment.total) * 100;
+}
+
 export function useConversation() {
   const welcomeClipRef = useRef<WelcomeClip>({
     content: "",
@@ -125,6 +138,7 @@ export function useConversation() {
     audioBase64: string,
     messageId?: string,
     release = true,
+    segment?: SpeechSegment,
   ) {
     playbackRef.current?.stop();
 
@@ -132,7 +146,9 @@ export function useConversation() {
 
     if (messageId) {
       setPlayingMessageId(messageId);
-      setAudioProgress(0);
+      if (!segment || segment.index === 0) {
+        setAudioProgress(0);
+      }
     }
 
     const playback = createAudioPlayback(audioBase64);
@@ -141,7 +157,7 @@ export function useConversation() {
     const removeProgressListener = playback.onProgress?.(
       (progress) => {
         if (messageId) {
-          setAudioProgress(progress);
+          setAudioProgress(segment ? overallProgress(segment, progress) : progress);
         }
       },
     );
@@ -163,6 +179,9 @@ export function useConversation() {
     playbackRef.current = null;
 
     if (!release) {
+      if (completed && segment) {
+        setAudioProgress(overallProgress(segment, 100));
+      }
       return completed;
     }
 
@@ -190,6 +209,7 @@ export function useConversation() {
         playable[index],
         messageId,
         index === playable.length - 1,
+        { index, total: playable.length },
       );
       if (!finished) {
         return;
@@ -309,6 +329,7 @@ export function useConversation() {
         }
 
         if (!audio) {
+          setAudioProgress(overallProgress({ index, total: sentences.length }, 100));
           continue;
         }
 
@@ -325,6 +346,7 @@ export function useConversation() {
           audio,
           assistantMessageId,
           !nextSentence,
+          { index, total: sentences.length },
         );
         if (!finished || epoch !== chatEpochRef.current) {
           upcoming?.catch(() => undefined);
