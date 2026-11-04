@@ -168,13 +168,31 @@ function AnswerText({ text }: { text: string }) {
     return () => window.clearInterval(timer);
   }, [text]);
 
+  const shown = text.slice(0, count);
+  let offset = 0;
+
   return (
     <p className={styles.body} aria-label={text}>
-      {Array.from(text.slice(0, count)).map((char, index) => (
-        <span key={index} className={styles.char}>
-          {char}
-        </span>
-      ))}
+      {shown.split(/(\s+)/).map((part) => {
+        const key = offset;
+        offset += part.length;
+        if (/^\s+$/.test(part)) {
+          return (
+            <span key={key} className={styles.gap}>
+              {part}
+            </span>
+          );
+        }
+        return (
+          <span key={key} className={styles.word}>
+            {Array.from(part).map((char, index) => (
+              <span key={key + index} className={styles.char}>
+                {char}
+              </span>
+            ))}
+          </span>
+        );
+      })}
     </p>
   );
 }

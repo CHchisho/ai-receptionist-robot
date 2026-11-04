@@ -88,11 +88,22 @@
   margin: 0;
   font-size: 1.05rem;
   line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.word {
+  display: inline;
+  white-space: nowrap;
+}
+
+.gap {
+  white-space: pre-wrap;
 }
 
 .char {
   display: inline-block;
-  white-space: pre;
   animation: char-in 0.18s ease-out both;
 }
 
@@ -109,8 +120,8 @@
 }
 
 .ttsLoader {
-  width: 60px;
-  aspect-ratio: 2;
+  width: 48px;
+  aspect-ratio: 2.2;
   --_g: no-repeat radial-gradient(circle closest-side, #000 90%, #0000);
   background:
     var(--_g) 0% 50%,
