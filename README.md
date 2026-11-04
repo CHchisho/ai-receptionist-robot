@@ -126,7 +126,7 @@ frontend/src/
 
 `ask()` routes a question via `ConversationService._route()` in this order:
 
-1. **Navigation** — if question contains an indoor location name, return navigation card
+1. **Navigation** — if the question contains an indoor location name as whole words, return navigation card. `reception` does not match inside `receptionist`.
 2. **Catalog** (demos/events) — if question matches a demo/event title, return the card without RAG
 3. **RAG** — search knowledge base for text context, pass to LLM
 

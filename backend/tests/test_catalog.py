@@ -61,6 +61,9 @@ class TestMatchTitle:
         """Punctuation should be normalized away."""
         assert _match_title("energy? demo.", "Energy, Management System!")
 
+    def test_receptionist_robot_matches_demo_title(self):
+        assert _match_title("what is receptionist robot", "AI Receptionist Robot")
+
     def test_short_word_alone_does_not_match(self):
         """A two-letter token such as 'ai' must not steal the question."""
         assert not _match_title("what is AI", "AI Receptionist Robot")

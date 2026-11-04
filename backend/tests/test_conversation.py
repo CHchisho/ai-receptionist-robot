@@ -217,6 +217,31 @@ def test_follow_up_can_switch_to_another_room() -> None:
     assert second.route.name == "Meeting room"
 
 
+def test_receptionist_robot_is_a_demo_not_the_entrance() -> None:
+    from app.services.catalog import _match_score
+
+    hit = CatalogHit(
+        kind="demo",
+        title="AI Receptionist Robot",
+        description="An AI receptionist that answers visitor questions and provides guidance.",
+        location="Main Hall",
+        source_id="demo-1",
+    )
+
+    class MatchingCatalog:
+        def find(self, query: str) -> CatalogHit | None:
+            return hit if _match_score(query, hit.title) else None
+
+    result = _service(catalog=MatchingCatalog()).ask(
+        AskRequest(text="What is receptionist robot")
+    )
+
+    assert result.route is None
+    assert result.card is not None
+    assert result.card.title == "AI Receptionist Robot"
+    assert result.sources[0].source_id == "demo-1"
+
+
 def test_ask_uses_demo_catalog_and_skips_rag() -> None:
     llm = RecordingLlm()
     rag = FakeRag(

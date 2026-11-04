@@ -25,3 +25,10 @@ def test_mock_navigation_matches_cindy_map_locations() -> None:
 
 def test_mock_navigation_returns_none_for_unknown_location() -> None:
     assert MockNavigationProvider().find("Where is the sauna?") is None
+
+
+def test_reception_alias_does_not_match_receptionist() -> None:
+    provider = MockNavigationProvider()
+
+    assert provider.find("What is receptionist robot") is None
+    assert provider.find("Where is the reception?").name == "Main entrance"
