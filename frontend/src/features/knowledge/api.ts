@@ -3,7 +3,8 @@ import { env } from "@/shared/config/env";
 
 export type KnowledgeSource = {
   source_id: string;
-  title: string;
+  title: string | null;
+  page_title: string;
   kind: string;
   url: string | null;
   filename: string | null;

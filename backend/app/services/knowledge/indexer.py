@@ -20,17 +20,54 @@ def status() -> dict:
     return {"indexing": _indexing, "error": _index_error}
 
 
+def optional_title(
+    stored: str | None,
+    *,
+    url: str | None = None,
+    filename: str | None = None,
+) -> str | None:
+    """A title the admin typed. A copied URL or file name does not count."""
+    text = (stored or "").strip()
+    if not text:
+        return None
+    if url and text == url.strip():
+        return None
+    if filename and text == Path(filename).stem:
+        return None
+    return text
+
+
+def visitor_label(
+    stored: str | None,
+    page_title: str | None,
+    *,
+    url: str | None = None,
+    filename: str | None = None,
+) -> str:
+    custom = optional_title(stored, url=url, filename=filename)
+    if custom:
+        return custom
+    heading = (page_title or "").strip()
+    if heading:
+        return heading
+    if filename:
+        return Path(filename).stem
+    return (url or "").strip()
+
+
 def catalog(rag: QdrantRagProvider) -> list[dict]:
     indexed = {item.source_id: item for item in rag.list_sources()}
     items = []
     for record in store.list_sources():
         qdrant = indexed.get(record.source_id)
         stale, reason = _stale(record, qdrant)
+        custom = optional_title(record.title, url=record.url, filename=record.filename)
         items.append(
             {
                 "source_id": record.source_id,
                 "kind": record.kind,
-                "title": record.title,
+                "title": custom,
+                "page_title": _page_heading(record, qdrant),
                 "url": record.url,
                 "filename": record.filename,
                 "chunk_count": qdrant.chunk_count if qdrant else 0,
@@ -42,13 +79,15 @@ def catalog(rag: QdrantRagProvider) -> list[dict]:
 
 
 def add_url(rag: QdrantRagProvider, url: str, label: str | None) -> dict:
-    indexed = rag.ingest_url(url, label=label, skip_if_present=False)
+    custom = optional_title(label, url=url)
+    indexed = rag.ingest_url(url, label=custom, skip_if_present=False)
     store.upsert_source(
         source_id=indexed.source_id,
         kind="url",
-        title=indexed.title,
+        title=custom or "",
         url=url,
         content_hash=indexed.content_hash,
+        page_title=indexed.page_title,
     )
     return _one(rag, indexed.source_id)
 
@@ -59,14 +98,16 @@ def add_file(rag: QdrantRagProvider, filename: str, data: bytes, label: str | No
     safe_name = Path(filename).name
     path = documents / safe_name
     path.write_bytes(data)
-    indexed = rag.ingest_file(path, title=label)
+    custom = optional_title(label, filename=safe_name)
+    indexed = rag.ingest_file(path, title=custom)
     store.upsert_source(
         source_id=indexed.source_id,
         kind="document",
-        title=indexed.title,
+        title=custom or "",
         filename=safe_name,
         file_hash=store.file_sha256(path),
         content_hash=indexed.content_hash,
+        page_title=indexed.page_title,
     )
     return _one(rag, indexed.source_id)
 
@@ -75,15 +116,20 @@ def rename_source(rag: QdrantRagProvider, source_id: str, title: str) -> dict:
     record = store.get_source(source_id)
     if record is None:
         raise KeyError(source_id)
-    rag.update_source_label(source_id, title)
+    indexed = {item.source_id: item for item in rag.list_sources()}
+    custom = optional_title(title, url=record.url, filename=record.filename)
+    page = _page_heading(record, indexed.get(source_id))
+    shown = visitor_label(custom, page, url=record.url, filename=record.filename)
+    rag.update_source_label(source_id, shown, page_title=page or None)
     store.upsert_source(
         source_id=record.source_id,
         kind=record.kind,
-        title=title,
+        title=custom or "",
         url=record.url,
         filename=record.filename,
         file_hash=record.file_hash,
         content_hash=record.content_hash,
+        page_title=page or None,
     )
     return _one(rag, source_id)
 
@@ -126,26 +172,34 @@ def reindex_all(rag: QdrantRagProvider) -> None:
         for path in sorted(documents.rglob("*")):
             if path.is_file() and path.suffix.lower() in _DOCUMENT_SUFFIXES:
                 existing = store.get_source(f"file:{path.name}")
-                indexed = rag.ingest_file(path, title=existing.title if existing else None)
+                custom = (
+                    optional_title(existing.title, filename=existing.filename)
+                    if existing
+                    else None
+                )
+                indexed = rag.ingest_file(path, title=custom)
                 store.upsert_source(
                     source_id=indexed.source_id,
                     kind="document",
-                    title=existing.title if existing else indexed.title,
+                    title=custom or "",
                     filename=path.name,
                     file_hash=store.file_sha256(path),
                     content_hash=indexed.content_hash,
+                    page_title=indexed.page_title,
                 )
 
     for record in store.list_sources():
         if record.kind != "url" or not record.url:
             continue
-        indexed = rag.ingest_url(record.url, label=record.title, skip_if_present=False)
+        custom = optional_title(record.title, url=record.url)
+        indexed = rag.ingest_url(record.url, label=custom, skip_if_present=False)
         store.upsert_source(
             source_id=indexed.source_id,
             kind="url",
-            title=record.title,
+            title=custom or "",
             url=record.url,
             content_hash=indexed.content_hash,
+            page_title=indexed.page_title,
         )
 
 
@@ -156,27 +210,60 @@ def sync_catalog_after_boot(rag: QdrantRagProvider) -> None:
         for path in sorted(documents.rglob("*")):
             if path.is_file() and path.suffix.lower() in _DOCUMENT_SUFFIXES:
                 source_id = f"file:{path.name}"
+                existing = store.get_source(source_id)
+                custom = (
+                    optional_title(existing.title, filename=existing.filename)
+                    if existing
+                    else None
+                )
                 store.upsert_source(
                     source_id=source_id,
                     kind="document",
-                    title=path.stem,
+                    title=custom or "",
                     filename=path.name,
                     file_hash=store.file_sha256(path),
+                    page_title=None if existing and existing.page_title else path.stem,
                 )
     for url in settings.knowledge_url_list:
-        store.upsert_source(source_id=f"url:{url}", kind="url", title=url, url=url)
+        source_id = f"url:{url}"
+        if store.get_source(source_id) is None:
+            store.upsert_source(source_id=source_id, kind="url", title="", url=url)
     for item in rag.list_sources():
         existing = store.get_source(item.source_id)
         if existing:
+            custom = optional_title(existing.title, url=existing.url, filename=existing.filename)
             store.upsert_source(
                 source_id=existing.source_id,
                 kind=existing.kind,
-                title=existing.title or item.title,
+                title=custom or "",
                 url=item.url or existing.url,
                 filename=existing.filename,
                 file_hash=existing.file_hash,
                 content_hash=item.content_hash,
+                page_title=_page_heading(existing, item) or None,
             )
+
+
+def _page_heading(record, qdrant) -> str:
+    stored = (getattr(record, "page_title", None) or "").strip()
+    if stored:
+        return stored
+    indexed = (getattr(qdrant, "page_title", None) or "").strip()
+    if indexed:
+        return indexed
+    custom = optional_title(
+        getattr(record, "title", None),
+        url=getattr(record, "url", None),
+        filename=getattr(record, "filename", None),
+    )
+    indexed_title = (getattr(qdrant, "title", None) or "").strip()
+    url = (getattr(record, "url", None) or "").strip()
+    if not custom and indexed_title and indexed_title != url:
+        return indexed_title
+    filename = getattr(record, "filename", None)
+    if filename:
+        return Path(filename).stem
+    return ""
 
 
 def _stale(record, qdrant) -> tuple[bool, str | None]:
