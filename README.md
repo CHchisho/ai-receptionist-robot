@@ -12,6 +12,12 @@ copy .env.example .env
 docker compose up --build
 ```
 
+On a machine with an NVIDIA GPU and `nvidia-container-toolkit`, add the GPU overlay so Ollama, Whisper, and Chatterbox can see CUDA. `WHISPER_DEVICE=auto` and `CHATTERBOX_DEVICE=auto` stay on CPU when the container has no GPU.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+```
+
 Open http://localhost:5173
 
 API docs: http://localhost:8000/api/docs
