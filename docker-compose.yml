@@ -8,6 +8,13 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 5s
@@ -36,6 +43,13 @@ services:
       PIPER_MODEL_PATH_FI: /models/piper/fi_FI-harri-medium.onnx
       HF_HOME: /models/hf
       WATCHFILES_FORCE_POLLING: "true"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     volumes:
       - ./backend:/app
       - ./knowledge:/knowledge
