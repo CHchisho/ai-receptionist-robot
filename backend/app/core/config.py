@@ -26,8 +26,10 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2:1b"
 
     whisper_model_size: str = "small"
-    whisper_device: str = "cpu"
-    whisper_compute_type: str = "int8"
+    # "auto" picks CUDA when available, otherwise CPU.
+    whisper_device: str = "auto"
+    # "auto" uses float16 on CUDA and int8 on CPU.
+    whisper_compute_type: str = "auto"
 
     piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
     piper_model_path_fi: str = "models/piper/fi_FI-harri-medium.onnx"
