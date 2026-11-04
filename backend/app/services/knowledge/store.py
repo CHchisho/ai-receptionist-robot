@@ -124,8 +124,16 @@ def _init(connection: sqlite3.Connection) -> None:
     _ensure_image_columns(connection)
     _ensure_kiosk_columns(connection)
     _ensure_source_columns(connection)
+    _ensure_turn_timing_columns(connection)
     _seed_locations(connection)
     connection.commit()
+
+
+def _ensure_turn_timing_columns(connection: sqlite3.Connection) -> None:
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(turns)")}
+    for name in ("stt_ms", "llm_ms", "tts_ms"):
+        if name not in existing:
+            connection.execute(f"ALTER TABLE turns ADD COLUMN {name} INTEGER")
 
 
 def _ensure_source_columns(connection: sqlite3.Connection) -> None:
@@ -330,12 +338,18 @@ def save_turn(
     retrieved: list[dict],
     system_prompt: str,
     user_prompt: str,
+    stt_ms: int | None = None,
+    llm_ms: int | None = None,
+    tts_ms: int | None = None,
 ) -> None:
     with connect() as connection:
         connection.execute(
             """
-            INSERT INTO turns (session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO turns (
+                session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at,
+                stt_ms, llm_ms, tts_ms
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session_id,
@@ -345,6 +359,9 @@ def save_turn(
                 system_prompt,
                 user_prompt,
                 _utc_now(),
+                stt_ms,
+                llm_ms,
+                tts_ms,
             ),
         )
         connection.commit()
@@ -383,7 +400,8 @@ def list_turns(session_id: str) -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
             """
-            SELECT id, session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at
+            SELECT id, session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at,
+                   stt_ms, llm_ms, tts_ms
             FROM turns
             WHERE session_id = ?
             ORDER BY id

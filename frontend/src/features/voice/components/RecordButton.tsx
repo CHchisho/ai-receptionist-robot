@@ -7,7 +7,7 @@ import styles from "./RecordButton.module.css";
 
 type Props = {
   disabled?: boolean;
-  onTranscribed: (text: string, language: string) => void;
+  onTranscribed: (text: string, language: string, sttMs: number) => void;
   onEmptyTranscription?: () => void;
   onStateChange?: (state: RecordingState) => void;
 };
@@ -61,7 +61,7 @@ export function RecordButton({
         return;
       }
 
-      onTranscribed(recognisedText, result.language);
+      onTranscribed(recognisedText, result.language, result.stt_ms);
     } catch {
       setError("Could not transcribe the recording. Please try again.");
     } finally {

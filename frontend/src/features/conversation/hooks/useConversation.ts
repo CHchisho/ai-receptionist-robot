@@ -175,7 +175,7 @@ export function useConversation() {
     setStatus((current) => (current === "speaking" ? "idle" : current));
   }
 
-  async function ask(text: string, language = "en") {
+  async function ask(text: string, language = "en", sttMs?: number) {
     const question = text.trim();
 
     if (
@@ -217,6 +217,7 @@ export function useConversation() {
         sessionId,
         language,
         request.signal,
+        sttMs,
       );
 
       if (epoch !== chatEpochRef.current) {

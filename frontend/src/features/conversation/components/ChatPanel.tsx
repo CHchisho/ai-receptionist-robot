@@ -85,10 +85,10 @@ export function ChatPanel({
     return () => window.clearTimeout(timer);
   }, [canOfferNewChat, lastReply?.id]);
 
-  function handleTranscribed(text: string, language: string) {
+  function handleTranscribed(text: string, language: string, sttMs: number) {
     setVoiceNotice(null);
     setCurrentLanguage(language);
-    ask(text, language);
+    ask(text, language, sttMs);
   }
 
   function handleEmptyTranscription() {

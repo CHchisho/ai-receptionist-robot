@@ -3,6 +3,7 @@ import { env } from "@/shared/config/env";
 export type TranscriptionResult = {
   text: string;
   language: string;
+  stt_ms: number;
 };
 
 /** Upload recorded audio to the backend and get recognised text + language. */

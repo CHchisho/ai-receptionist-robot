@@ -1,4 +1,6 @@
 import base64
+import logging
+import time
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
@@ -11,6 +13,7 @@ from app.services.tts.base import TtsProvider
 from app.services.tts.welcome import cached_welcome_audio
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/conversation/ask", response_model=AskResponse)
@@ -39,8 +42,12 @@ async def transcribe(
     stt: SttProvider = Depends(get_stt_provider),
 ) -> TranscribeResponse:
     audio = await file.read()
+    started = time.perf_counter()
     result = stt.transcribe(audio)
+    stt_ms = int((time.perf_counter() - started) * 1000)
+    logger.info("whisper timings stt_ms=%s chars=%s", stt_ms, len(result.text or ""))
     return TranscribeResponse(
         text=result.text,
         language=result.language,
+        stt_ms=stt_ms,
     )

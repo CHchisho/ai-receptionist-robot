@@ -32,6 +32,13 @@ function dayLabel(key: string) {
   });
 }
 
+function formatMs(value: number | null) {
+  if (value == null) {
+    return "—";
+  }
+  return `${(value / 1000).toFixed(2)}s`;
+}
+
 function formatTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -274,6 +281,10 @@ export function HistoryPanel() {
                             <article key={turn.id} className={styles.turn}>
                               <p>
                                 <strong>Visitor:</strong> {turn.question}
+                              </p>
+                              <p className={styles.timings}>
+                                Whisper {formatMs(turn.stt_ms)} · LLM {formatMs(turn.llm_ms)} · TTS{" "}
+                                {formatMs(turn.tts_ms)}
                               </p>
                               <div className={styles.lenaRow}>
                                 <p>

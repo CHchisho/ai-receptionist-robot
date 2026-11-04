@@ -6,6 +6,7 @@ export function askQuestion(
   sessionId?: string,
   language = "en",
   signal?: AbortSignal,
+  sttMs?: number,
 ) {
   return http<AskResponse>("/api/v1/conversation/ask", {
     method: "POST",
@@ -14,6 +15,7 @@ export function askQuestion(
       text,
       session_id: sessionId ?? null,
       language,
+      stt_ms: sttMs ?? null,
     }),
   });
 }

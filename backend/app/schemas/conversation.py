@@ -7,6 +7,8 @@ class AskRequest(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     session_id: str | None = None
     language: str = "en"
+    # Whisper duration from the preceding transcribe call. Empty for typed questions.
+    stt_ms: int | None = Field(default=None, ge=0)
 
 
 class SourceChunk(BaseModel):
@@ -61,6 +63,7 @@ class SpeakResponse(BaseModel):
 class TranscribeResponse(BaseModel):
     text: str
     language: str
+    stt_ms: int
 
 
 class HistorySessionSummary(BaseModel):
@@ -80,6 +83,9 @@ class HistoryTurn(BaseModel):
     system_prompt: str
     user_prompt: str
     created_at: str
+    stt_ms: int | None = None
+    llm_ms: int | None = None
+    tts_ms: int | None = None
 
 
 class HistorySessionDetail(BaseModel):
