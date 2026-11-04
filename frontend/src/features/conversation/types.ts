@@ -19,6 +19,8 @@ export type ChatMessage = {
   content: string;
   createdAt: string;
   pending?: boolean;
+  reveal?: boolean;
+  ttsPending?: boolean;
   links?: ChatLink[];
   audioBase64?: string | null;
   route?: NavigationRoute | null;
@@ -40,6 +42,7 @@ export type AskResponse = {
   session_id: string;
   answer: string;
   audio_base64: string | null;
+  turn_id: number | null;
   links: ChatLink[];
   sources: { source_id: string; title: string; snippet: string }[];
   card: ContentCard | null;

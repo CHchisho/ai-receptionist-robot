@@ -1,4 +1,3 @@
-import base64
 import logging
 import re
 import time
@@ -84,21 +83,14 @@ class ConversationService:
             )
 
         answer = expand_official_venue_name(answer)
-        started = time.perf_counter()
-        audio = self._tts.synthesize(
-            answer,
-            language=language,
-        )
-        tts_ms = _elapsed_ms(started)
         logger.info(
-            "ask timings session=%s stt_ms=%s llm_ms=%s tts_ms=%s",
+            "ask timings session=%s stt_ms=%s llm_ms=%s",
             session_id,
             payload.stt_ms,
             llm_ms,
-            tts_ms,
         )
 
-        store.save_turn(
+        turn_id = store.save_turn(
             session_id=session_id,
             question=payload.text,
             answer=answer,
@@ -115,13 +107,13 @@ class ConversationService:
             user_prompt=user_prompt,
             stt_ms=payload.stt_ms,
             llm_ms=llm_ms,
-            tts_ms=tts_ms,
         )
 
         return AskResponse(
             session_id=session_id,
             answer=answer,
-            audio_base64=base64.b64encode(audio).decode("ascii") if audio else None,
+            audio_base64=None,
+            turn_id=turn_id,
             links=_unique_links(chunks),
             sources=[
                 SourceChunk(

@@ -243,6 +243,8 @@ export function loadWelcomeSpeech(text: string): Promise<string | null> {
 export async function synthesizeSpeech(
   text: string,
   signal?: AbortSignal,
+  turnId?: number,
+  language = "en",
 ): Promise<string | null> {
   const response = await fetch(`${env.apiBaseUrl}/api/v1/conversation/speak`, {
     method: "POST",
@@ -250,7 +252,11 @@ export async function synthesizeSpeech(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      text,
+      language,
+      turn_id: turnId ?? null,
+    }),
   });
 
   if (!response.ok) {

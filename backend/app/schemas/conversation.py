@@ -49,11 +49,14 @@ class AskResponse(BaseModel):
     sources: list[SourceChunk] = []
     route: NavigationRoute | None = None
     card: ContentCard | None = None
+    turn_id: int | None = None
 
 
 class SpeakRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=1000)
+    text: str = Field(min_length=1, max_length=4000)
     language: str = "en"
+    # When set, the synthesis duration is stored on that chat turn.
+    turn_id: int | None = Field(default=None, ge=1)
 
 
 class SpeakResponse(BaseModel):

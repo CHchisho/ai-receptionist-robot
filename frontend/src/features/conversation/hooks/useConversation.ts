@@ -5,6 +5,7 @@ import {
   createAudioPlayback,
   fetchPreparedWelcome,
   loadWelcomeSpeech,
+  synthesizeSpeech,
   type AudioPlayback,
 } from "@/features/voice/services/ttsClient";
 import type { UiState } from "@/shared/types/ui";
@@ -188,6 +189,7 @@ export function useConversation() {
 
     const epoch = chatEpochRef.current;
     const request = beginRequest();
+    let answerShown = false;
     setError(null);
     setStatus("processing");
 
@@ -243,20 +245,38 @@ export function useConversation() {
                 ...message,
                 content: response.answer,
                 pending: false,
+                reveal: true,
+                ttsPending: true,
                 links: temporaryLinks,
-                audioBase64: response.audio_base64,
                 route: response.route,
                 card: response.card,
               }
             : message,
         ),
       );
+      answerShown = true;
 
-      if (response.audio_base64 && epoch === chatEpochRef.current) {
-        await playBase64Audio(
-          response.audio_base64,
-          assistantMessageId,
-        );
+      const audioBase64 = await synthesizeSpeech(
+        response.answer,
+        request.signal,
+        response.turn_id ?? undefined,
+        language,
+      );
+
+      if (epoch !== chatEpochRef.current) {
+        return;
+      }
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? { ...message, ttsPending: false, audioBase64 }
+            : message,
+        ),
+      );
+
+      if (audioBase64) {
+        await playBase64Audio(audioBase64, assistantMessageId);
       }
 
       if (epoch === chatEpochRef.current) {
@@ -266,9 +286,23 @@ export function useConversation() {
       if (epoch !== chatEpochRef.current || isAbortError(error)) {
         return;
       }
-      setMessages((current) => current.filter((message) => message.id !== assistantMessageId));
+      setMessages((current) =>
+        current.flatMap((message) => {
+          if (message.id !== assistantMessageId) {
+            return [message];
+          }
+          if (message.pending || !message.content) {
+            return [];
+          }
+          return [{ ...message, ttsPending: false }];
+        }),
+      );
       setStatus("error");
-      setError("Could not get an answer. Please try again.");
+      setError(
+        answerShown
+          ? "Could not play the answer."
+          : "Could not get an answer. Please try again.",
+      );
     }
   }
 

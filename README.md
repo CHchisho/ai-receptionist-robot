@@ -117,8 +117,9 @@ frontend/src/
 
 `ReceptionPage` → `POST /api/v1/conversation/ask` `{ text }`
 → `ConversationService.ask`
-→ Qdrant (or mock RAG) → Ollama (or mock LLM) → Piper (or mock TTS)
-→ JSON `{ answer, audio_base64, sources, links }` → chat UI, which auto-plays `audio_base64` via `ttsClient.playAudio` so the visitor hears the reply immediately
+→ Qdrant (or mock RAG) → Ollama (or mock LLM)
+→ JSON `{ answer, turn_id, sources, links }` → the chat shows the answer immediately
+→ `POST /api/v1/conversation/speak` `{ text, turn_id }` synthesizes speech and the chat plays it when the clip is ready
 
 `links` are approved URLs from retrieved sources (for QR). `sources` are the text chunks used as context.
 

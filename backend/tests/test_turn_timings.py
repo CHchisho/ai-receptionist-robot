@@ -38,3 +38,20 @@ def test_typed_turn_leaves_whisper_empty() -> None:
     assert turn["stt_ms"] is None
     assert turn["llm_ms"] == 100
     assert turn["tts_ms"] == 200
+
+
+def test_tts_duration_can_be_added_after_the_turn() -> None:
+    turn_id = store.save_turn(
+        session_id="session-3",
+        question="typed",
+        answer="answer",
+        retrieved=[],
+        system_prompt="system",
+        user_prompt="user",
+        llm_ms=100,
+    )
+
+    store.set_turn_tts_ms(turn_id, 2500)
+
+    turn = store.list_turns("session-3")[0]
+    assert turn["tts_ms"] == 2500

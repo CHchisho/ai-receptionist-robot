@@ -70,11 +70,17 @@ export function MessageList({
 
             {isPending ? (
               <div className={styles.loader} role="status" aria-label="Lena is preparing an answer" />
+            ) : message.reveal ? (
+              <AnswerText text={message.content} />
             ) : (
               <p className={styles.body}>
                 <LinkifiedText text={message.content} />
               </p>
             )}
+
+            {message.ttsPending ? (
+              <div className={styles.ttsLoader} role="status" aria-label="Lena is preparing speech" />
+            ) : null}
 
             {message.role === "assistant" && message.card ? (
               <div className={styles.contentCard}>
@@ -136,6 +142,40 @@ export function MessageList({
         );
       })}
     </ol>
+  );
+}
+
+function AnswerText({ text }: { text: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || text.length === 0) {
+      setCount(text.length);
+      return;
+    }
+
+    setCount(0);
+    let current = 0;
+    const timer = window.setInterval(() => {
+      current += 1;
+      setCount(current);
+      if (current >= text.length) {
+        window.clearInterval(timer);
+      }
+    }, 12);
+
+    return () => window.clearInterval(timer);
+  }, [text]);
+
+  return (
+    <p className={styles.body} aria-label={text}>
+      {Array.from(text.slice(0, count)).map((char, index) => (
+        <span key={index} className={styles.char}>
+          {char}
+        </span>
+      ))}
+    </p>
   );
 }
 

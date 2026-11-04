@@ -341,9 +341,9 @@ def save_turn(
     stt_ms: int | None = None,
     llm_ms: int | None = None,
     tts_ms: int | None = None,
-) -> None:
+) -> int:
     with connect() as connection:
-        connection.execute(
+        cursor = connection.execute(
             """
             INSERT INTO turns (
                 session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at,
@@ -363,6 +363,17 @@ def save_turn(
                 llm_ms,
                 tts_ms,
             ),
+        )
+        turn_id = int(cursor.lastrowid or 0)
+        connection.commit()
+    return turn_id
+
+
+def set_turn_tts_ms(turn_id: int, tts_ms: int) -> None:
+    with connect() as connection:
+        connection.execute(
+            "UPDATE turns SET tts_ms = ? WHERE id = ?",
+            (tts_ms, turn_id),
         )
         connection.commit()
 
