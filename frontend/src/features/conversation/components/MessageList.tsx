@@ -28,7 +28,9 @@ export function MessageList({
         const canPlay =
           message.role === "assistant" &&
           !isPending &&
-          (Boolean(message.audioBase64) || message.id === "welcome");
+          (Boolean(message.audioBase64) ||
+            Boolean(message.audioClips?.length) ||
+            message.id === "welcome");
 
         return (
           <li

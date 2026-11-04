@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
 import type { ChatLink, ChatMessage } from "@/features/conversation/types";
+import { splitSentences } from "@/features/voice/splitSentences";
 import {
   createAudioPlayback,
   fetchPreparedWelcome,
@@ -123,6 +124,7 @@ export function useConversation() {
   async function playBase64Audio(
     audioBase64: string,
     messageId?: string,
+    release = true,
   ) {
     playbackRef.current?.stop();
 
@@ -155,17 +157,21 @@ export function useConversation() {
     }
 
     if (playbackRef.current !== playback) {
-      return;
+      return false;
     }
 
     playbackRef.current = null;
+
+    if (!release) {
+      return completed;
+    }
 
     if (completed && messageId) {
       setAudioProgress(100);
       await waitForNextPaint();
 
       if (playbackRef.current !== null) {
-        return;
+        return false;
       }
     }
 
@@ -174,6 +180,21 @@ export function useConversation() {
       setAudioProgress(0);
     }
     setStatus((current) => (current === "speaking" ? "idle" : current));
+    return completed;
+  }
+
+  async function playClips(clips: string[], messageId?: string) {
+    const playable = clips.filter(Boolean);
+    for (let index = 0; index < playable.length; index += 1) {
+      const finished = await playBase64Audio(
+        playable[index],
+        messageId,
+        index === playable.length - 1,
+      );
+      if (!finished) {
+        return;
+      }
+    }
   }
 
   async function ask(text: string, language = "en", sttMs?: number) {
@@ -256,31 +277,76 @@ export function useConversation() {
       );
       answerShown = true;
 
-      const audioBase64 = await synthesizeSpeech(
-        response.answer,
-        request.signal,
-        response.turn_id ?? undefined,
-        language,
-      );
+      const sentences = splitSentences(response.answer);
+      const clips: string[] = [];
+      let upcoming: Promise<string | null> | null = sentences[0]
+        ? synthesizeSpeech(
+            sentences[0],
+            request.signal,
+            response.turn_id ?? undefined,
+            language,
+          )
+        : null;
 
-      if (epoch !== chatEpochRef.current) {
-        return;
+      for (let index = 0; index < sentences.length; index += 1) {
+        if (!upcoming) {
+          break;
+        }
+        const audio = await upcoming;
+        upcoming = null;
+        if (epoch !== chatEpochRef.current) {
+          return;
+        }
+
+        const nextSentence = sentences[index + 1];
+        if (nextSentence) {
+          upcoming = synthesizeSpeech(
+            nextSentence,
+            request.signal,
+            response.turn_id ?? undefined,
+            language,
+          );
+        }
+
+        if (!audio) {
+          continue;
+        }
+
+        clips.push(audio);
+        const ready = [...clips];
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, ttsPending: false, audioClips: ready, audioBase64: ready[0] }
+              : message,
+          ),
+        );
+        const finished = await playBase64Audio(
+          audio,
+          assistantMessageId,
+          !nextSentence,
+        );
+        if (!finished || epoch !== chatEpochRef.current) {
+          upcoming?.catch(() => undefined);
+          if (epoch === chatEpochRef.current) {
+            finishSpeechUi(assistantMessageId);
+          }
+          return;
+        }
       }
 
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantMessageId
-            ? { ...message, ttsPending: false, audioBase64 }
-            : message,
-        ),
-      );
+      upcoming?.catch(() => undefined);
 
-      if (audioBase64) {
-        await playBase64Audio(audioBase64, assistantMessageId);
+      if (clips.length === 0 && epoch === chatEpochRef.current) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId ? { ...message, ttsPending: false } : message,
+          ),
+        );
       }
 
       if (epoch === chatEpochRef.current) {
-        setStatus("idle");
+        finishSpeechUi(assistantMessageId);
       }
     } catch (error) {
       if (epoch !== chatEpochRef.current || isAbortError(error)) {
@@ -297,6 +363,10 @@ export function useConversation() {
           return [{ ...message, ttsPending: false }];
         }),
       );
+      if (playbackRef.current === null) {
+        setPlayingMessageId((current) => (current === assistantMessageId ? null : current));
+        setAudioProgress(0);
+      }
       setStatus("error");
       setError(
         answerShown
@@ -381,6 +451,17 @@ export function useConversation() {
     setStatus("welcome");
   }
 
+  function finishSpeechUi(messageId: string) {
+    if (playbackRef.current) {
+      return;
+    }
+    setPlayingMessageId((current) => (current === messageId ? null : current));
+    setAudioProgress(0);
+    setStatus((current) =>
+      current === "speaking" || current === "processing" ? "idle" : current,
+    );
+  }
+
   function stopSpeaking() {
     playbackRef.current?.stop();
     playbackRef.current = null;
@@ -399,11 +480,16 @@ export function useConversation() {
       return;
     }
 
-    if (message.audioBase64) {
+    const clips = message.audioClips?.length
+      ? message.audioClips
+      : message.audioBase64
+        ? [message.audioBase64]
+        : [];
+    if (clips.length > 0) {
       if (message.id === "welcome") {
         setError(null);
       }
-      void playBase64Audio(message.audioBase64, message.id);
+      void playClips(clips, message.id);
       return;
     }
 

@@ -372,7 +372,7 @@ def save_turn(
 def set_turn_tts_ms(turn_id: int, tts_ms: int) -> None:
     with connect() as connection:
         connection.execute(
-            "UPDATE turns SET tts_ms = ? WHERE id = ?",
+            "UPDATE turns SET tts_ms = COALESCE(tts_ms, 0) + ? WHERE id = ?",
             (tts_ms, turn_id),
         )
         connection.commit()

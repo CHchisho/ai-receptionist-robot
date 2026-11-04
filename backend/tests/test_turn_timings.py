@@ -52,6 +52,7 @@ def test_tts_duration_can_be_added_after_the_turn() -> None:
     )
 
     store.set_turn_tts_ms(turn_id, 2500)
+    store.set_turn_tts_ms(turn_id, 800)
 
     turn = store.list_turns("session-3")[0]
-    assert turn["tts_ms"] == 2500
+    assert turn["tts_ms"] == 3300

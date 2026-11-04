@@ -119,7 +119,7 @@ frontend/src/
 → `ConversationService.ask`
 → Qdrant (or mock RAG) → Ollama (or mock LLM)
 → JSON `{ answer, turn_id, sources, links }` → the chat shows the answer immediately
-→ `POST /api/v1/conversation/speak` `{ text, turn_id }` synthesizes speech and the chat plays it when the clip is ready
+→ `POST /api/v1/conversation/speak` `{ text, turn_id }` runs once per sentence. The chat plays the first sentence as soon as it is ready and synthesizes the next sentence during playback
 
 `links` are approved URLs from retrieved sources (for QR). `sources` are the text chunks used as context.
 

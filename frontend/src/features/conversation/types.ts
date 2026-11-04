@@ -23,6 +23,7 @@ export type ChatMessage = {
   ttsPending?: boolean;
   links?: ChatLink[];
   audioBase64?: string | null;
+  audioClips?: string[];
   route?: NavigationRoute | null;
   card?: ContentCard | null;
 };
