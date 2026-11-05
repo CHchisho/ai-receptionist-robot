@@ -8,6 +8,7 @@ from app.services.tts.chatterbox import (
     ChatterboxTtsProvider,
     ensure_lessac_reference,
     load_chatterbox_model,
+    trim_generated_audio,
 )
 
 
@@ -54,6 +55,7 @@ def test_synthesize_returns_wav_for_finnish(tmp_path) -> None:
         language_id="fi",
         exaggeration=0.5,
         cfg_weight=0.0,
+        repetition_penalty=1.2,
     )
     assert audio.startswith(b"RIFF")
 
@@ -136,6 +138,46 @@ def test_load_uses_v3_only_when_the_installed_api_accepts_it() -> None:
     module.ChatterboxMultilingualTTS = WithV3
     with patch.dict(sys.modules, modules):
         assert load_chatterbox_model("cuda") == ("v3", "cuda", "v3")
+
+
+def _block(seconds: float, rate: int, amplitude: float) -> list[float]:
+    return [amplitude] * int(seconds * rate)
+
+
+def test_trim_removes_noise_after_a_sentence_gap() -> None:
+    rate = 1000
+    audio = (
+        _block(1.0, rate, 0.4)
+        + _block(0.5, rate, 0.0)
+        + _block(1.2, rate, 0.3)
+    )
+
+    trimmed = trim_generated_audio(audio, rate)
+
+    assert len(trimmed) < rate * 1.3
+    assert len(trimmed) > rate * 0.9
+
+
+def test_trim_keeps_a_short_pause_inside_the_sentence() -> None:
+    rate = 1000
+    audio = (
+        _block(0.6, rate, 0.4)
+        + _block(0.12, rate, 0.0)
+        + _block(0.6, rate, 0.4)
+    )
+
+    trimmed = trim_generated_audio(audio, rate)
+
+    assert len(trimmed) == len(audio)
+
+
+def test_trim_shortens_trailing_silence() -> None:
+    rate = 1000
+    audio = _block(0.8, rate, 0.4) + _block(0.8, rate, 0.0)
+
+    trimmed = trim_generated_audio(audio, rate)
+
+    assert rate * 0.8 < len(trimmed) < rate * 1.05
 
 
 def test_missing_reference_wav_raises(tmp_path) -> None:

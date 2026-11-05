@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import logging
+import math
+import threading
 import wave
 from pathlib import Path
 
@@ -121,6 +123,102 @@ def _pcm_wav(samples, sample_rate: int) -> bytes:
     return buffer.getvalue()
 
 
+def _frame_rms(samples: list[float], frame: int, hop: int) -> list[float]:
+    levels: list[float] = []
+    for start in range(0, len(samples) - frame + 1, hop):
+        window = samples[start : start + frame]
+        levels.append(math.sqrt(sum(value * value for value in window) / frame))
+    return levels
+
+
+def trim_generated_audio(samples, sample_rate: int) -> list[float]:
+    """Drop a hallucinated tail: speech, a gap, then noise or extra audio.
+
+    A short pause inside one sentence stays. The cut only happens when the gap
+    is long enough to be the end of the sentence and a later burst follows it.
+    Trailing near-silence is shortened so a clip does not end on a hiss.
+    """
+    audio = [float(sample) for sample in samples]
+    if sample_rate <= 0 or len(audio) < sample_rate // 5:
+        return audio
+
+    frame = max(1, int(sample_rate * 0.02))
+    hop = frame
+    levels = _frame_rms(audio, frame, hop)
+    if not levels:
+        return audio
+
+    peak = max(levels)
+    if peak < 1e-4:
+        return audio
+    threshold = max(0.015, peak * 0.08)
+
+    loud = [level >= threshold for level in levels]
+    last_loud = max((index for index, is_loud in enumerate(loud) if is_loud), default=None)
+    if last_loud is None:
+        return audio
+
+    burst_start = last_loud
+    while burst_start > 0 and loud[burst_start - 1]:
+        burst_start -= 1
+
+    gap_end = burst_start
+    gap_start = gap_end
+    while gap_start > 0 and not loud[gap_start - 1]:
+        gap_start -= 1
+
+    gap_seconds = (gap_end - gap_start) * hop / sample_rate
+    burst_seconds = (last_loud - burst_start + 1) * hop / sample_rate
+    has_speech_before_gap = gap_start > 0
+    if has_speech_before_gap and gap_seconds >= 0.30 and burst_seconds >= 0.25:
+        cut = min(len(audio), gap_start * hop + int(sample_rate * 0.06))
+        audio = audio[:cut]
+        levels = _frame_rms(audio, frame, hop)
+        loud = [level >= threshold for level in levels]
+        last_loud = max((index for index, is_loud in enumerate(loud) if is_loud), default=None)
+        if last_loud is None:
+            return audio
+
+    keep = min(len(audio), (last_loud + 1) * hop + int(sample_rate * 0.08))
+    if len(audio) - keep < int(sample_rate * 0.12):
+        return audio
+
+    trimmed = audio[:keep]
+    fade = min(len(trimmed), int(sample_rate * 0.02))
+    if fade > 1:
+        for index in range(fade):
+            trimmed[-fade + index] *= 1.0 - (index / (fade - 1))
+    return trimmed
+
+
+def _disable_buggy_alignment_analyzer() -> None:
+    """Stop Chatterbox 0.1.7 from forcing an end-of-speech token.
+
+    That analyzer misfires on short sentences. The clip then continues with
+    invented words, or with silence followed by a burst of noise. Current
+    upstream builds removed the analyzer; this no-ops it when it is still installed.
+    """
+    try:
+        from chatterbox.models.t3.inference.alignment_stream_analyzer import (
+            AlignmentStreamAnalyzer,
+        )
+    except Exception:
+        return
+
+    if getattr(AlignmentStreamAnalyzer, "_lena_fixed", False):
+        return
+
+    def __init__(self, tfmr, queue, text_tokens_slice, alignment_layer_idx=9, eos_idx=0):
+        self.eos_idx = eos_idx
+
+    def step(self, logits, next_token=None):
+        return logits
+
+    AlignmentStreamAnalyzer.__init__ = __init__
+    AlignmentStreamAnalyzer.step = step
+    AlignmentStreamAnalyzer._lena_fixed = True
+
+
 class ChatterboxTtsProvider:
     """One Chatterbox voice for every language the model supports.
 
@@ -152,17 +250,25 @@ class ChatterboxTtsProvider:
 
         logger.info("Cloning Chatterbox voice from %s", reference)
         self._model.prepare_conditionals(reference, exaggeration=exaggeration)
+        self._generate_lock = threading.Lock()
+        _disable_buggy_alignment_analyzer()
 
     def synthesize(self, text: str, language: str) -> bytes:
         language_id = (language or "en").lower().split("-", 1)[0].split("_", 1)[0]
         if language_id not in SUPPORTED_LANGUAGES:
             language_id = "en"
 
-        wav = self._model.generate(
-            text,
-            language_id=language_id,
-            exaggeration=self._exaggeration,
-            cfg_weight=self._cfg_weight,
-        )
+        # One generation at a time. Overlapping calls share the model and
+        # splice words from another sentence into the clip.
+        with self._generate_lock:
+            _disable_buggy_alignment_analyzer()
+            wav = self._model.generate(
+                text,
+                language_id=language_id,
+                exaggeration=self._exaggeration,
+                cfg_weight=self._cfg_weight,
+                repetition_penalty=1.2,
+            )
         samples = wav.squeeze(0).detach().cpu().numpy()
-        return _pcm_wav(samples, int(self._model.sr))
+        sample_rate = int(self._model.sr)
+        return _pcm_wav(trim_generated_audio(samples, sample_rate), sample_rate)
