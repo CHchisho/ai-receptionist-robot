@@ -54,7 +54,7 @@ Set `LLM_PROVIDER=ollama` and install [Ollama](https://ollama.com) locally. On A
 
 #### STT_PROVIDER=whisper (faster-whisper)
 
-`STT_PROVIDER=mock` needs nothing extra. For real transcription install `ffmpeg` on `PATH`, then set `STT_PROVIDER=whisper`. The model downloads from Hugging Face on first load (`WHISPER_MODEL_SIZE=small`). Whisper chooses the language itself.
+`STT_PROVIDER=mock` needs nothing extra. For real transcription install `ffmpeg` on `PATH`, then set `STT_PROVIDER=whisper`. The model downloads from Hugging Face on first load (`WHISPER_MODEL_SIZE=medium`). Each clip is transcribed as English or Finnish. Finnish is used when it is clearly more likely than English; otherwise the clip is transcribed as English, with the language token fixed before decoding.
 
 #### TTS_PROVIDER=chatterbox
 

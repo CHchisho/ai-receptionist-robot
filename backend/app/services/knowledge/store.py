@@ -10,7 +10,7 @@ from pathlib import Path
 from app.core.config import settings
 
 DEFAULT_WELCOME_TEXT = (
-    "Hello, I am Lena. Ask me about Nokia Espoo, the Innovation Garage, "
+    "Hello, I am Lena. Ask me about Nokia Espoo Innovation Garage, "
     "or how to find your way."
 )
 

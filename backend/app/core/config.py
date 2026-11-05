@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.2:1b"
 
-    whisper_model_size: str = "small"
+    whisper_model_size: str = "medium"
     # "auto" picks CUDA when available, otherwise CPU.
     whisper_device: str = "auto"
-    # "auto" uses float16 on CUDA and int8 on CPU.
+    # "auto" uses int8_float16 on CUDA and int8 on CPU.
     whisper_compute_type: str = "auto"
 
     piper_model_path: str = "models/piper/en_US-lessac-medium.onnx"
