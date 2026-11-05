@@ -282,10 +282,6 @@ export function HistoryPanel() {
                               <p>
                                 <strong>Visitor:</strong> {turn.question}
                               </p>
-                              <p className={styles.timings}>
-                                Whisper {formatMs(turn.stt_ms)} · LLM {formatMs(turn.llm_ms)} · TTS{" "}
-                                {formatMs(turn.tts_ms)}
-                              </p>
                               <div className={styles.lenaRow}>
                                 <p>
                                   <strong>Lena:</strong> {turn.answer}
@@ -302,6 +298,10 @@ export function HistoryPanel() {
                               </div>
                               {detailsId === turn.id ? (
                                 <div className={styles.details}>
+                                  <p className={styles.timings}>
+                                    Whisper {formatMs(turn.stt_ms)} · LLM {formatMs(turn.llm_ms)} · TTS{" "}
+                                    {formatMs(turn.tts_ms)}
+                                  </p>
                                   <details>
                                     <summary>Retrieved</summary>
                                     {turn.retrieved.length === 0 ? (
