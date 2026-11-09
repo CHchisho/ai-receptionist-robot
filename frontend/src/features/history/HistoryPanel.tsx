@@ -299,7 +299,7 @@ export function HistoryPanel() {
                               {detailsId === turn.id ? (
                                 <div className={styles.details}>
                                   <p className={styles.timings}>
-                                    Whisper {formatMs(turn.stt_ms)} · LLM {formatMs(turn.llm_ms)} · TTS{" "}
+                                    STT {formatMs(turn.stt_ms)} · LLM {formatMs(turn.llm_ms)} · TTS{" "}
                                     {formatMs(turn.tts_ms)}
                                   </p>
                                   <details>
