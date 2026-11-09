@@ -129,6 +129,7 @@ class QdrantRagProvider:
                         url=payload.get("url"),
                         chunk_count=1,
                         content_hash=payload.get("content_hash"),
+                        page_title=str(payload.get("page_title") or "") or None,
                     )
                 else:
                     grouped[source_id] = KnowledgeSource(
@@ -146,7 +147,8 @@ class QdrantRagProvider:
     def ingest_file(self, path: Path, title: str | None = None) -> KnowledgeSource:
         text = extract_path(path)
         source_id = f"file:{path.name}"
-        display = title or path.stem
+        page_title = path.stem
+        display = title or page_title
         return self.ingest_text(
             source_id=source_id,
             title=display,
@@ -154,6 +156,7 @@ class QdrantRagProvider:
             kind="document",
             url=None,
             label=display,
+            page_title=page_title,
         )
 
     def ingest_bytes(
@@ -169,13 +172,16 @@ class QdrantRagProvider:
             text = extract_pdf(data)
         else:
             text = data.decode("utf-8", errors="replace")
+        page_title = Path(filename).stem
+        display = title or page_title
         return self.ingest_text(
             source_id=f"file:{filename}",
-            title=title or Path(filename).stem,
+            title=display,
             text=text,
             kind="document",
             url=None,
-            label=title or Path(filename).stem,
+            label=display,
+            page_title=page_title,
         )
 
     def ingest_url(
@@ -191,14 +197,16 @@ class QdrantRagProvider:
             if existing is not None:
                 logger.info("Keeping cached URL source %s", source_id)
                 return existing
-        title, text = fetch_url(url)
+        page_title, text = fetch_url(url)
+        display = label or page_title
         return self.ingest_text(
             source_id=source_id,
-            title=label or title,
+            title=display,
             text=text,
             kind="url",
             url=url,
-            label=label or title,
+            label=display,
+            page_title=page_title,
         )
 
     def ingest_text(
@@ -209,6 +217,7 @@ class QdrantRagProvider:
         kind: str,
         url: str | None,
         label: str | None,
+        page_title: str | None = None,
     ) -> KnowledgeSource:
         self._ensure_collection()
         chunks = chunk_text(text, size=self._chunk_size, overlap=self._chunk_overlap)
@@ -218,6 +227,7 @@ class QdrantRagProvider:
         content_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
         if self._source_hash_matches(source_id, content_hash):
             logger.info("Skipping unchanged source %s", source_id)
+            self.update_source_label(source_id, title, page_title=page_title)
             return KnowledgeSource(
                 source_id=source_id,
                 title=title,
@@ -225,6 +235,7 @@ class QdrantRagProvider:
                 url=url,
                 chunk_count=len(chunks),
                 content_hash=content_hash,
+                page_title=page_title,
             )
 
         vectors = self._embedder.embed(chunks)
@@ -250,6 +261,7 @@ class QdrantRagProvider:
                         "kind": kind,
                         "url": url,
                         "label": label or title,
+                        "page_title": page_title or "",
                         "content_hash": content_hash,
                         "chunk_index": index,
                     },
@@ -264,6 +276,7 @@ class QdrantRagProvider:
             url=url,
             chunk_count=len(points),
             content_hash=content_hash,
+            page_title=page_title,
         )
 
     def delete_source(self, source_id: str) -> None:
@@ -277,11 +290,14 @@ class QdrantRagProvider:
             ),
         )
 
-    def update_source_label(self, source_id: str, title: str) -> None:
+    def update_source_label(self, source_id: str, title: str, page_title: str | None = None) -> None:
         self._ensure_collection()
+        payload: dict[str, str] = {"title": title, "label": title}
+        if page_title:
+            payload["page_title"] = page_title
         self._client.set_payload(
             collection_name=self._collection,
-            payload={"title": title, "label": title},
+            payload=payload,
             points=Filter(
                 must=[FieldCondition(key="source_id", match=MatchValue(value=source_id))]
             ),

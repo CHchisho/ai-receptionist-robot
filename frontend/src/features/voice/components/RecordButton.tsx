@@ -2,11 +2,12 @@ import { useState } from "react";
 import { IconMicrophone, IconStop } from "@/shared/icons";
 import { useMicrophone } from "@/features/voice/hooks/useMicrophone";
 import { transcribeAudio } from "@/features/voice/services/sttClient";
+import { unlockAudio } from "@/features/voice/services/ttsClient";
 import styles from "./RecordButton.module.css";
 
 type Props = {
   disabled?: boolean;
-  onTranscribed: (text: string, language: string) => void;
+  onTranscribed: (text: string, language: string, sttMs: number) => void;
   onEmptyTranscription?: () => void;
   onStateChange?: (state: RecordingState) => void;
 };
@@ -33,6 +34,8 @@ export function RecordButton({
       return;
     }
 
+    unlockAudio();
+
     if (state === "idle") {
       setError(null);
 
@@ -58,7 +61,7 @@ export function RecordButton({
         return;
       }
 
-      onTranscribed(recognisedText, result.language);
+      onTranscribed(recognisedText, result.language, result.stt_ms);
     } catch {
       setError("Could not transcribe the recording. Please try again.");
     } finally {

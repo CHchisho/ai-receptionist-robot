@@ -13,11 +13,9 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY app ./app
 
-# Chatterbox pins torch==2.6.0, and PyPI serves the CUDA wheel. The server has no GPU,
-# so replace that wheel with the CPU build after the package install.
-RUN pip install --no-cache-dir -e ".[chatterbox]" \
-    && pip install --no-cache-dir --force-reinstall --index-url https://download.pytorch.org/whl/cpu \
-        torch==2.6.0 torchaudio==2.6.0
+# Install with CUDA-enabled PyTorch so Chatterbox and Whisper can use the GPU (RTX 2060).
+# PyPI already serves CUDA wheels for torch 2.6.0 — no CPU override needed.
+RUN pip install --no-cache-dir -e ".[chatterbox]"
 
 EXPOSE 8000
 

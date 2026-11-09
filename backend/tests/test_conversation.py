@@ -159,17 +159,18 @@ def test_ask_expands_venue_name_before_tts() -> None:
 
     expected = "The demo is in the Nokia Espoo Innovation Garage."
     assert result.answer == expected
-    assert tts.text == expected
+    assert tts.text is None
 
 
-def test_ask_includes_base64_audio_when_tts_produces_bytes() -> None:
+def test_ask_returns_text_without_waiting_for_tts() -> None:
     class FakeTtsProvider:
         def synthesize(self, text: str, language: str) -> bytes:
             return b"fake-audio-bytes"
 
     result = _service(tts=FakeTtsProvider()).ask(AskRequest(text="Where is the kitchen?"))
 
-    assert result.audio_base64 == "ZmFrZS1hdWRpby1ieXRlcw=="
+    assert result.audio_base64 is None
+    assert result.turn_id is not None
 
 
 def test_ask_includes_structured_navigation_context() -> None:
@@ -215,6 +216,31 @@ def test_follow_up_can_switch_to_another_room() -> None:
     assert first.route.name == "Restrooms"
     assert second.route is not None
     assert second.route.name == "Meeting room"
+
+
+def test_receptionist_robot_is_a_demo_not_the_entrance() -> None:
+    from app.services.catalog import _match_score
+
+    hit = CatalogHit(
+        kind="demo",
+        title="AI Receptionist Robot",
+        description="An AI receptionist that answers visitor questions and provides guidance.",
+        location="Main Hall",
+        source_id="demo-1",
+    )
+
+    class MatchingCatalog:
+        def find(self, query: str) -> CatalogHit | None:
+            return hit if _match_score(query, hit.title) else None
+
+    result = _service(catalog=MatchingCatalog()).ask(
+        AskRequest(text="What is receptionist robot")
+    )
+
+    assert result.route is None
+    assert result.card is not None
+    assert result.card.title == "AI Receptionist Robot"
+    assert result.sources[0].source_id == "demo-1"
 
 
 def test_ask_uses_demo_catalog_and_skips_rag() -> None:
@@ -324,7 +350,7 @@ def test_ask_uses_finnish_for_llm_and_tts() -> None:
     )
 
     assert llm.language == "fi"
-    assert tts.language == "fi"
+    assert tts.language is None
     assert result.answer == "Finnish answer"
 
 
@@ -371,7 +397,7 @@ def test_ask_falls_back_to_english_for_unsupported_language() -> None:
     )
 
     assert llm.language == "en"
-    assert tts.language == "en"
+    assert tts.language is None
     assert result.answer.startswith(
         "I can currently respond in English or Finnish."
     )
@@ -390,5 +416,5 @@ def test_ask_refuses_in_finnish_when_no_verified_facts() -> None:
     result = _service(tts=tts).ask(AskRequest(text="Mikä on salasana?", language="fi"))
 
     assert result.answer == "En tiedä. Minulla ei ole siitä tietoa."
-    assert tts.language == "fi"
+    assert tts.language is None
     assert "I don't know" not in result.answer 

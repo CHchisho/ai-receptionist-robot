@@ -7,6 +7,8 @@ class AskRequest(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     session_id: str | None = None
     language: str = "en"
+    # Whisper duration from the preceding transcribe call. Empty for typed questions.
+    stt_ms: int | None = Field(default=None, ge=0)
 
 
 class SourceChunk(BaseModel):
@@ -47,11 +49,14 @@ class AskResponse(BaseModel):
     sources: list[SourceChunk] = []
     route: NavigationRoute | None = None
     card: ContentCard | None = None
+    turn_id: int | None = None
 
 
 class SpeakRequest(BaseModel):
-    text: str = Field(min_length=1, max_length=1000)
+    text: str = Field(min_length=1, max_length=4000)
     language: str = "en"
+    # When set, the synthesis duration is stored on that chat turn.
+    turn_id: int | None = Field(default=None, ge=1)
 
 
 class SpeakResponse(BaseModel):
@@ -61,6 +66,7 @@ class SpeakResponse(BaseModel):
 class TranscribeResponse(BaseModel):
     text: str
     language: str
+    stt_ms: int
 
 
 class HistorySessionSummary(BaseModel):
@@ -80,6 +86,9 @@ class HistoryTurn(BaseModel):
     system_prompt: str
     user_prompt: str
     created_at: str
+    stt_ms: int | None = None
+    llm_ms: int | None = None
+    tts_ms: int | None = None
 
 
 class HistorySessionDetail(BaseModel):

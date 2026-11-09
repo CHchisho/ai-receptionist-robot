@@ -12,6 +12,12 @@ copy .env.example .env
 docker compose up --build
 ```
 
+On a machine with an NVIDIA GPU and `nvidia-container-toolkit`, add the GPU overlay so Ollama, Whisper, and Chatterbox can see CUDA. `WHISPER_DEVICE=auto` and `CHATTERBOX_DEVICE=auto` stay on CPU when the container has no GPU.
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+```
+
 Open http://localhost:5173
 
 API docs: http://localhost:8000/api/docs
@@ -48,7 +54,7 @@ Set `LLM_PROVIDER=ollama` and install [Ollama](https://ollama.com) locally. On A
 
 #### STT_PROVIDER=whisper (faster-whisper)
 
-`STT_PROVIDER=mock` needs nothing extra. For real transcription install `ffmpeg` on `PATH`, then set `STT_PROVIDER=whisper`. The model downloads from Hugging Face on first load (`WHISPER_MODEL_SIZE=small`). Whisper chooses the language itself.
+`STT_PROVIDER=mock` needs nothing extra. For real transcription install `ffmpeg` on `PATH`, then set `STT_PROVIDER=whisper`. The model downloads from Hugging Face on first load (`WHISPER_MODEL_SIZE=medium`). Each clip is transcribed as English or Finnish. Finnish is used when it is clearly more likely than English; otherwise the clip is transcribed as English, with the language token fixed before decoding.
 
 #### TTS_PROVIDER=chatterbox
 
@@ -70,7 +76,7 @@ npm run dev
 
 Open http://localhost:5173
 
-Staff: http://localhost:5173/admin — knowledge sources (add/remove file or URL, reindex, view chunks), chat history, and visitor feedback. App SQLite: `knowledge/app.sqlite`.
+Staff: http://localhost:5173/admin — basic settings (reception mode and Lena's welcome message), knowledge sources (add/remove file or URL, reindex, view chunks), chat history, and visitor feedback. App SQLite: `knowledge/app.sqlite`.
 
 Vite proxies `/api` to the backend (`VITE_API_PROXY_TARGET`, default `http://localhost:8000`).
 
@@ -111,8 +117,9 @@ frontend/src/
 
 `ReceptionPage` → `POST /api/v1/conversation/ask` `{ text }`
 → `ConversationService.ask`
-→ Qdrant (or mock RAG) → Ollama (or mock LLM) → Piper (or mock TTS)
-→ JSON `{ answer, audio_base64, sources, links }` → chat UI, which auto-plays `audio_base64` via `ttsClient.playAudio` so the visitor hears the reply immediately
+→ Qdrant (or mock RAG) → Ollama (or mock LLM)
+→ JSON `{ answer, turn_id, sources, links }` → the chat shows the answer immediately
+→ `POST /api/v1/conversation/speak` `{ text, turn_id }` runs once per sentence. The chat plays the first sentence as soon as it is ready and synthesizes the next sentence during playback
 
 `links` are approved URLs from retrieved sources (for QR). `sources` are the text chunks used as context.
 
@@ -120,7 +127,7 @@ frontend/src/
 
 `ask()` routes a question via `ConversationService._route()` in this order:
 
-1. **Navigation** — if question contains an indoor location name, return navigation card
+1. **Navigation** — if the question contains an indoor location name as whole words, return navigation card. `reception` does not match inside `receptionist`.
 2. **Catalog** (demos/events) — if question matches a demo/event title, return the card without RAG
 3. **RAG** — search knowledge base for text context, pass to LLM
 

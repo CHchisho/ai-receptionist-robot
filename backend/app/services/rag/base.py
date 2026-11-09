@@ -19,6 +19,7 @@ class KnowledgeSource:
     url: str | None = None
     chunk_count: int = 0
     content_hash: str | None = None
+    page_title: str | None = None
 
 
 @dataclass(frozen=True)

@@ -22,6 +22,9 @@ export type HistoryTurn = {
   system_prompt: string;
   user_prompt: string;
   created_at: string;
+  stt_ms: number | null;
+  llm_ms: number | null;
+  tts_ms: number | null;
 };
 
 export function listSessions() {

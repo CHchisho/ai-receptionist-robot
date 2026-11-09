@@ -1,5 +1,5 @@
 from app.services.knowledge import store
-from app.services.navigation.base import Location
+from app.services.navigation.base import Location, alias_in_text
 
 
 class SqliteNavigationProvider:
@@ -13,7 +13,7 @@ class SqliteNavigationProvider:
             aliases = {_normalize(alias) for alias in record.aliases}
             aliases.add(_normalize(record.name))
             aliases.discard("")
-            if any(alias in normalized for alias in aliases):
+            if any(alias_in_text(alias, normalized) for alias in aliases):
                 return Location(
                     name=record.name,
                     floor=record.floor,

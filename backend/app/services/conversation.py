@@ -1,5 +1,6 @@
-import base64
+import logging
 import re
+import time
 from uuid import uuid4
 
 from app.core.config import settings
@@ -19,6 +20,8 @@ from app.services.navigation.base import Location, NavigationProvider
 from app.services.rag.base import RagProvider, RetrievedChunk
 from app.services.tts.base import TtsProvider
 from app.services.venue_name import expand_official_venue_name
+
+logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES = {"en", "fi"}
 
@@ -58,17 +61,20 @@ class ConversationService:
 
         location, catalog_hit, chunks = self._route(payload.text, history)
 
+        llm_ms: int | None = None
         if not chunks:
             answer = UNKNOWN_BY_LANGUAGE[language]
             user_prompt = build_user_prompt(payload.text, [], history)
         else:
             user_prompt = build_user_prompt(payload.text, chunks, history)
+            started = time.perf_counter()
             answer = self._llm.generate(
                 question=payload.text,
                 context=chunks,
                 history=history,
                 language=language,
             )
+            llm_ms = _elapsed_ms(started)
 
         if unsupported_language:
             answer = (
@@ -77,12 +83,14 @@ class ConversationService:
             )
 
         answer = expand_official_venue_name(answer)
-        audio = self._tts.synthesize(
-            answer,
-            language=language,
+        logger.info(
+            "ask timings session=%s stt_ms=%s llm_ms=%s",
+            session_id,
+            payload.stt_ms,
+            llm_ms,
         )
 
-        store.save_turn(
+        turn_id = store.save_turn(
             session_id=session_id,
             question=payload.text,
             answer=answer,
@@ -97,12 +105,15 @@ class ConversationService:
             ],
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
+            stt_ms=payload.stt_ms,
+            llm_ms=llm_ms,
         )
 
         return AskResponse(
             session_id=session_id,
             answer=answer,
-            audio_base64=base64.b64encode(audio).decode("ascii") if audio else None,
+            audio_base64=None,
+            turn_id=turn_id,
             links=_unique_links(chunks),
             sources=[
                 SourceChunk(
@@ -153,6 +164,10 @@ class ConversationService:
         if history and _is_referential(question):
             return self._catalog.find(f"{history[-1]['question']} {question}")
         return None
+
+
+def _elapsed_ms(started: float) -> int:
+    return int((time.perf_counter() - started) * 1000)
 
 
 def _usable_chunks(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:

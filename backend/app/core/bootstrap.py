@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.dependencies import get_llm_provider, get_rag_provider, get_stt_provider, get_tts_provider
 from app.services.knowledge import store
 from app.services.tts.piper import ensure_piper_voice
+from app.services.tts.welcome import prepare_welcome_audio
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,9 @@ def bootstrap() -> None:
     if settings.stt_provider == "whisper":
         logger.info("Loading Whisper model '%s'", settings.whisper_model_size)
         get_stt_provider()
+
+    logger.info("Preparing Lena's welcome message")
+    prepare_welcome_audio(get_tts_provider())
 
     if settings.rag_provider == "qdrant":
         logger.info("Preparing Qdrant collection '%s'", settings.qdrant_collection)

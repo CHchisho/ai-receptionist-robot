@@ -1,4 +1,4 @@
-from app.services.navigation.base import Location
+from app.services.navigation.base import Location, alias_in_text
 
 
 DEFAULT_LOCATIONS = [
@@ -94,7 +94,7 @@ class MockNavigationProvider:
         if not normalized:
             return None
         for location, aliases in DEFAULT_LOCATIONS:
-            if any(alias in normalized for alias in aliases):
+            if any(alias_in_text(alias, normalized) for alias in aliases):
                 return location
         return None
 

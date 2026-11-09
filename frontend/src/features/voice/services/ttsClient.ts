@@ -10,7 +10,6 @@ const VOLUME_KEY = "tts-volume";
 const MAX_VOLUME = 2;
 
 let activeAudioStop: (() => void) | null = null;
-let activeAudioElement: HTMLAudioElement | null = null;
 let audioContext: AudioContext | null = null;
 let gainNode: GainNode | null = null;
 let ttsVolume = readStoredVolume();
@@ -29,7 +28,11 @@ function readStoredVolume() {
 
 function ensureGain() {
   if (!audioContext) {
-    audioContext = new AudioContext();
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    audioContext = new Ctor();
   }
   if (!gainNode) {
     gainNode = audioContext.createGain();
@@ -39,14 +42,29 @@ function ensureGain() {
   return { context: audioContext, gain: gainNode };
 }
 
-function routeAudio(audio: HTMLAudioElement) {
-  const { context, gain } = ensureGain();
-  audio.volume = 1;
-  if (!audio.dataset.routed) {
-    context.createMediaElementSource(audio).connect(gain);
-    audio.dataset.routed = "1";
+// iOS Safari only lets an AudioContext start inside a user gesture. Once it is
+// running, buffers can be played at any time, so this must be called
+// synchronously from a tap handler (e.g. the microphone button).
+export function unlockAudio() {
+  const { context } = ensureGain();
+  if (context.state !== "running") {
+    void context.resume();
   }
-  void context.resume();
+  const silent = context.createBufferSource();
+  silent.buffer = context.createBuffer(1, 1, 22050);
+  silent.connect(context.destination);
+  silent.start(0);
+}
+
+function unlockOnGesture() {
+  if (audioContext?.state === "running") {
+    return;
+  }
+  unlockAudio();
+}
+
+for (const eventName of ["touchend", "click", "keydown"]) {
+  document.addEventListener(eventName, unlockOnGesture, { passive: true });
 }
 
 export function getTtsVolume() {
@@ -59,18 +77,14 @@ export function setTtsVolume(volume: number) {
   if (gainNode) {
     gainNode.gain.value = ttsVolume;
   }
-  if (activeAudioElement && !gainNode) {
-    activeAudioElement.volume = Math.min(1, ttsVolume);
-  }
 }
 
 export function stopActiveAudio() {
   activeAudioStop?.();
   activeAudioStop = null;
-  activeAudioElement = null;
 }
 
-function audioUrlFromBase64(audioBase64: string) {
+function bytesFromBase64(audioBase64: string) {
   const binary = atob(audioBase64);
   const bytes = new Uint8Array(binary.length);
 
@@ -78,137 +92,104 @@ function audioUrlFromBase64(audioBase64: string) {
     bytes[i] = binary.charCodeAt(i);
   }
 
-  const blob = new Blob([bytes], { type: "audio/wav" });
-  return URL.createObjectURL(blob);
-}
-
-export function createAudio(audioBase64: string): HTMLAudioElement {
-  const url = audioUrlFromBase64(audioBase64);
-  const audio = new Audio(url);
-
-  const stop = () => {
-    audio.pause();
-    audio.currentTime = 0;
-    URL.revokeObjectURL(url);
-
-    if (activeAudioStop === stop) {
-      activeAudioStop = null;
-      activeAudioElement = null;
-    }
-  };
-
-  stopActiveAudio();
-  routeAudio(audio);
-  activeAudioStop = stop;
-  activeAudioElement = audio;
-
-  audio.addEventListener("ended", () => {
-    URL.revokeObjectURL(url);
-
-    if (activeAudioStop === stop) {
-      activeAudioStop = null;
-      activeAudioElement = null;
-    }
-  });
-
-  return audio;
-}
-
-export async function playAudio(audioBase64: string): Promise<void> {
-  const audio = createAudio(audioBase64);
-  await audio.play();
+  return bytes.buffer;
 }
 
 export function createAudioPlayback(audioBase64: string): AudioPlayback {
-  const url = audioUrlFromBase64(audioBase64);
-  const audio = new Audio(url);
+  stopActiveAudio();
+
+  const { context, gain } = ensureGain();
   const progressListeners = new Set<(progress: number) => void>();
-  let stop = () => {};
+  let source: AudioBufferSourceNode | null = null;
   let settled = false;
   let progressFrame = 0;
-
-  stopActiveAudio();
-  routeAudio(audio);
-  activeAudioElement = audio;
+  let resolveFinished: (completed: boolean) => void = () => {};
+  let rejectFinished: (error: Error) => void = () => {};
 
   const finished = new Promise<boolean>((resolve, reject) => {
-    function cleanup() {
-      cancelAnimationFrame(progressFrame);
-      URL.revokeObjectURL(url);
-      progressListeners.clear();
-      if (activeAudioElement === audio) {
-        activeAudioElement = null;
-      }
-      if (activeAudioStop === stop) {
-        activeAudioStop = null;
-      }
-    }
-
-    function notifyProgress(progress: number) {
-      progressListeners.forEach((callback) => {
-        callback(progress);
-      });
-    }
-
-    function readProgress() {
-      if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
-        return;
-      }
-
-      notifyProgress(Math.min((audio.currentTime / audio.duration) * 100, 100));
-    }
-
-    function reachedEnd() {
-      if (audio.ended) {
-        return true;
-      }
-      return (
-        Number.isFinite(audio.duration) &&
-        audio.duration > 0 &&
-        audio.currentTime >= audio.duration - 0.15
-      );
-    }
-
-    function trackProgress() {
-      readProgress();
-      if (reachedEnd()) {
-        finish(true);
-        return;
-      }
-      progressFrame = requestAnimationFrame(trackProgress);
-    }
-
-    function finish(completed: boolean) {
-      if (settled) return;
-      settled = true;
-      if (completed) {
-        notifyProgress(100);
-      }
-      cleanup();
-      resolve(completed);
-    }
-
-    function fail(error: unknown) {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      reject(error instanceof Error ? error : new Error("Audio playback failed"));
-    }
-
-    audio.onended = () => finish(true);
-    audio.onerror = () => fail(new Error("Audio playback failed"));
-
-    stop = () => {
-      audio.pause();
-      audio.currentTime = 0;
-      finish(false);
-    };
-
-    activeAudioStop = stop;
-    progressFrame = requestAnimationFrame(trackProgress);
-
-    void audio.play().catch(fail);
+    resolveFinished = resolve;
+    rejectFinished = reject;
   });
+
+  function notifyProgress(progress: number) {
+    progressListeners.forEach((callback) => {
+      callback(progress);
+    });
+  }
+
+  function cleanup() {
+    cancelAnimationFrame(progressFrame);
+    progressListeners.clear();
+    if (source) {
+      source.onended = null;
+      try {
+        source.stop();
+      } catch {
+        // Source may not have started yet.
+      }
+      source.disconnect();
+      source = null;
+    }
+    if (activeAudioStop === stop) {
+      activeAudioStop = null;
+    }
+  }
+
+  function finish(completed: boolean) {
+    if (settled) return;
+    settled = true;
+    if (completed) {
+      notifyProgress(100);
+    }
+    cleanup();
+    resolveFinished(completed);
+  }
+
+  function fail(error: unknown) {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    rejectFinished(
+      error instanceof Error ? error : new Error("Audio playback failed"),
+    );
+  }
+
+  function stop() {
+    finish(false);
+  }
+
+  activeAudioStop = stop;
+
+  void (async () => {
+    try {
+      if (context.state !== "running") {
+        await context.resume();
+      }
+      const buffer = await context.decodeAudioData(
+        bytesFromBase64(audioBase64),
+      );
+      if (settled) return;
+
+      const node = context.createBufferSource();
+      node.buffer = buffer;
+      node.connect(gain);
+      node.onended = () => finish(true);
+      source = node;
+
+      const startedAt = context.currentTime;
+      node.start(0);
+
+      const trackProgress = () => {
+        if (settled) return;
+        const elapsed = context.currentTime - startedAt;
+        notifyProgress(Math.min((elapsed / buffer.duration) * 100, 100));
+        progressFrame = requestAnimationFrame(trackProgress);
+      };
+      progressFrame = requestAnimationFrame(trackProgress);
+    } catch (error) {
+      fail(error);
+    }
+  })();
 
   return {
     finished,
@@ -222,9 +203,48 @@ export function createAudioPlayback(audioBase64: string): AudioPlayback {
   };
 }
 
+const welcomeAudioByText = new Map<string, Promise<string | null>>();
+
+export type PreparedWelcome = {
+  text: string;
+  audioBase64: string | null;
+};
+
+/** Opening line saved in admin, including the clip prepared at startup. */
+export async function fetchPreparedWelcome(): Promise<PreparedWelcome> {
+  const response = await fetch(`${env.apiBaseUrl}/api/v1/kiosk/welcome`);
+  if (!response.ok) {
+    throw new Error(`Welcome message failed: ${response.status}`);
+  }
+  const data = (await response.json()) as {
+    text: string;
+    audio_base64: string | null;
+  };
+  return {
+    text: data.text,
+    audioBase64: data.audio_base64,
+  };
+}
+
+/** One request per wording, shared by a tap that arrives before playback is ready. */
+export function loadWelcomeSpeech(text: string): Promise<string | null> {
+  const pending = welcomeAudioByText.get(text);
+  if (pending) {
+    return pending;
+  }
+  const request = synthesizeSpeech(text).catch((error: unknown) => {
+    welcomeAudioByText.delete(text);
+    throw error;
+  });
+  welcomeAudioByText.set(text, request);
+  return request;
+}
+
 export async function synthesizeSpeech(
   text: string,
   signal?: AbortSignal,
+  turnId?: number,
+  language = "en",
 ): Promise<string | null> {
   const response = await fetch(`${env.apiBaseUrl}/api/v1/conversation/speak`, {
     method: "POST",
@@ -232,7 +252,11 @@ export async function synthesizeSpeech(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      text,
+      language,
+      turn_id: turnId ?? null,
+    }),
   });
 
   if (!response.ok) {

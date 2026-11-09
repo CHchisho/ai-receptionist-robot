@@ -8,12 +8,13 @@ class UrlIngestRequest(BaseModel):
 
 class SourceLabelRequest(BaseModel):
     source_id: str
-    title: str = Field(min_length=1, max_length=200)
+    title: str = Field(default="", max_length=200)
 
 
 class KnowledgeSourceResponse(BaseModel):
     source_id: str
-    title: str
+    title: str | None = None
+    page_title: str = ""
     kind: str
     url: str | None = None
     filename: str | None = None

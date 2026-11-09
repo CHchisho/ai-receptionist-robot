@@ -9,6 +9,11 @@ from pathlib import Path
 
 from app.core.config import settings
 
+DEFAULT_WELCOME_TEXT = (
+    "Hello, I am Lena. Ask me about Nokia Espoo Innovation Garage, "
+    "or how to find your way."
+)
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -38,7 +43,8 @@ def _init(connection: sqlite3.Connection) -> None:
             filename TEXT,
             file_hash TEXT,
             content_hash TEXT,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            page_title TEXT
         );
         CREATE TABLE IF NOT EXISTS turns (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +89,8 @@ def _init(connection: sqlite3.Connection) -> None:
         );
         CREATE TABLE IF NOT EXISTS kiosk_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
-            mode TEXT NOT NULL DEFAULT 'chat'
+            mode TEXT NOT NULL DEFAULT 'chat',
+            welcome_text TEXT
         );
         INSERT OR IGNORE INTO kiosk_settings (id, mode)
         VALUES (1, 'chat');
@@ -115,8 +122,30 @@ def _init(connection: sqlite3.Connection) -> None:
         """
     )
     _ensure_image_columns(connection)
+    _ensure_kiosk_columns(connection)
+    _ensure_source_columns(connection)
+    _ensure_turn_timing_columns(connection)
     _seed_locations(connection)
     connection.commit()
+
+
+def _ensure_turn_timing_columns(connection: sqlite3.Connection) -> None:
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(turns)")}
+    for name in ("stt_ms", "llm_ms", "tts_ms"):
+        if name not in existing:
+            connection.execute(f"ALTER TABLE turns ADD COLUMN {name} INTEGER")
+
+
+def _ensure_source_columns(connection: sqlite3.Connection) -> None:
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(sources)")}
+    if "page_title" not in existing:
+        connection.execute("ALTER TABLE sources ADD COLUMN page_title TEXT")
+
+
+def _ensure_kiosk_columns(connection: sqlite3.Connection) -> None:
+    existing = {row[1] for row in connection.execute("PRAGMA table_info(kiosk_settings)")}
+    if "welcome_text" not in existing:
+        connection.execute("ALTER TABLE kiosk_settings ADD COLUMN welcome_text TEXT")
 
 
 def _ensure_image_columns(connection: sqlite3.Connection) -> None:
@@ -247,6 +276,7 @@ class SourceRecord:
     file_hash: str | None
     content_hash: str | None
     created_at: str
+    page_title: str | None = None
 
 
 def upsert_source(
@@ -257,21 +287,23 @@ def upsert_source(
     filename: str | None = None,
     file_hash: str | None = None,
     content_hash: str | None = None,
+    page_title: str | None = None,
 ) -> None:
     with connect() as connection:
         connection.execute(
             """
-            INSERT INTO sources (source_id, kind, title, url, filename, file_hash, content_hash, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sources (source_id, kind, title, url, filename, file_hash, content_hash, created_at, page_title)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(source_id) DO UPDATE SET
                 kind = excluded.kind,
                 title = excluded.title,
-                url = excluded.url,
-                filename = excluded.filename,
-                file_hash = excluded.file_hash,
-                content_hash = excluded.content_hash
+                url = COALESCE(excluded.url, sources.url),
+                filename = COALESCE(excluded.filename, sources.filename),
+                file_hash = COALESCE(excluded.file_hash, sources.file_hash),
+                content_hash = COALESCE(excluded.content_hash, sources.content_hash),
+                page_title = COALESCE(excluded.page_title, sources.page_title)
             """,
-            (source_id, kind, title, url, filename, file_hash, content_hash, _utc_now()),
+            (source_id, kind, title, url, filename, file_hash, content_hash, _utc_now(), page_title),
         )
         connection.commit()
 
@@ -285,7 +317,7 @@ def delete_source(source_id: str) -> None:
 def list_sources() -> list[SourceRecord]:
     with connect() as connection:
         rows = connection.execute(
-            "SELECT source_id, kind, title, url, filename, file_hash, content_hash, created_at FROM sources ORDER BY created_at"
+            "SELECT source_id, kind, title, url, filename, file_hash, content_hash, created_at, page_title FROM sources ORDER BY created_at"
         ).fetchall()
     return [_source_from_row(row) for row in rows]
 
@@ -293,7 +325,7 @@ def list_sources() -> list[SourceRecord]:
 def get_source(source_id: str) -> SourceRecord | None:
     with connect() as connection:
         row = connection.execute(
-            "SELECT source_id, kind, title, url, filename, file_hash, content_hash, created_at FROM sources WHERE source_id = ?",
+            "SELECT source_id, kind, title, url, filename, file_hash, content_hash, created_at, page_title FROM sources WHERE source_id = ?",
             (source_id,),
         ).fetchone()
     return _source_from_row(row) if row else None
@@ -306,12 +338,18 @@ def save_turn(
     retrieved: list[dict],
     system_prompt: str,
     user_prompt: str,
-) -> None:
+    stt_ms: int | None = None,
+    llm_ms: int | None = None,
+    tts_ms: int | None = None,
+) -> int:
     with connect() as connection:
-        connection.execute(
+        cursor = connection.execute(
             """
-            INSERT INTO turns (session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO turns (
+                session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at,
+                stt_ms, llm_ms, tts_ms
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session_id,
@@ -321,7 +359,21 @@ def save_turn(
                 system_prompt,
                 user_prompt,
                 _utc_now(),
+                stt_ms,
+                llm_ms,
+                tts_ms,
             ),
+        )
+        turn_id = int(cursor.lastrowid or 0)
+        connection.commit()
+    return turn_id
+
+
+def set_turn_tts_ms(turn_id: int, tts_ms: int) -> None:
+    with connect() as connection:
+        connection.execute(
+            "UPDATE turns SET tts_ms = COALESCE(tts_ms, 0) + ? WHERE id = ?",
+            (tts_ms, turn_id),
         )
         connection.commit()
 
@@ -359,7 +411,8 @@ def list_turns(session_id: str) -> list[dict]:
     with connect() as connection:
         rows = connection.execute(
             """
-            SELECT id, session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at
+            SELECT id, session_id, question, answer, retrieved_json, system_prompt, user_prompt, created_at,
+                   stt_ms, llm_ms, tts_ms
             FROM turns
             WHERE session_id = ?
             ORDER BY id
@@ -743,6 +796,30 @@ def set_kiosk_mode(mode: str) -> str:
     return mode
 
 
+def get_welcome_text() -> str:
+    with connect() as connection:
+        row = connection.execute(
+            "SELECT welcome_text FROM kiosk_settings WHERE id = 1"
+        ).fetchone()
+    if row is None:
+        return DEFAULT_WELCOME_TEXT
+    stored = row["welcome_text"]
+    if not isinstance(stored, str) or not stored.strip():
+        return DEFAULT_WELCOME_TEXT
+    return stored.strip()
+
+
+def set_welcome_text(text: str) -> str:
+    cleaned = text.strip()
+    with connect() as connection:
+        connection.execute(
+            "UPDATE kiosk_settings SET welcome_text = ? WHERE id = 1",
+            (cleaned,),
+        )
+        connection.commit()
+    return cleaned
+
+
 @dataclass(frozen=True)
 class LocationRecord:
     id: int
@@ -960,4 +1037,5 @@ def _source_from_row(row: sqlite3.Row) -> SourceRecord:
         file_hash=row["file_hash"],
         content_hash=row["content_hash"],
         created_at=row["created_at"],
+        page_title=row["page_title"],
     )

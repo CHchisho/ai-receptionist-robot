@@ -133,11 +133,12 @@ export function SourcesPanel() {
     }
   }
 
+  function shownTitle(source: KnowledgeSource) {
+    return source.title || source.page_title || source.filename || source.url || "Untitled";
+  }
+
   async function saveLabel(sourceId: string) {
     const title = editingTitle.trim();
-    if (!title) {
-      return;
-    }
     setError(null);
     try {
       await renameSource(sourceId, title);
@@ -153,7 +154,9 @@ export function SourcesPanel() {
       <div className={styles.headerRow}>
         <div>
           <h2 className={styles.title}>Knowledge sources</h2>
-          <p className={styles.copy}>Documents and URLs Lena can use in answers.</p>
+          <p className={styles.copy}>
+            Documents and URLs Lena can use in answers. Title is optional: an empty title uses the page heading.
+          </p>
         </div>
         <button className={styles.primary} type="button" onClick={handleReindex} disabled={indexing}>
           {indexing ? "Reindexing…" : "Reindex knowledge"}
@@ -194,7 +197,7 @@ export function SourcesPanel() {
             className={styles.input}
             value={urlLabel}
             onChange={(event) => setUrlLabel(event.target.value)}
-            placeholder="Label"
+            placeholder="Title (optional)"
           />
           <button className={styles.button} type="submit" disabled={indexing}>
             Add
@@ -207,7 +210,7 @@ export function SourcesPanel() {
             className={styles.input}
             value={fileLabel}
             onChange={(event) => setFileLabel(event.target.value)}
-            placeholder="Label"
+            placeholder="Title (optional)"
           />
           <button className={styles.button} type="submit" disabled={indexing}>
             Upload
@@ -238,6 +241,8 @@ export function SourcesPanel() {
                     className={styles.input}
                     value={editingTitle}
                     onChange={(event) => setEditingTitle(event.target.value)}
+                    placeholder={source.page_title || "Title"}
+                    aria-label="Title"
                     autoFocus
                   />
                   <button className={styles.button} type="submit">
@@ -250,14 +255,14 @@ export function SourcesPanel() {
               ) : (
                 <div className={styles.itemMain}>
                   <div className={styles.labelRow}>
-                    <strong>{source.title}</strong>
+                    <strong>{shownTitle(source)}</strong>
                     <button
                       type="button"
                       className={styles.iconBtn}
-                      aria-label="Edit label"
+                      aria-label="Edit title"
                       onClick={() => {
                         setEditingId(source.source_id);
-                        setEditingTitle(source.title);
+                        setEditingTitle(source.title ?? "");
                       }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -291,7 +296,7 @@ export function SourcesPanel() {
 
               {pendingDelete?.source_id === source.source_id ? (
                 <div className={styles.confirm}>
-                  <p>Delete “{source.title}”? This cannot be undone.</p>
+                  <p>Delete “{shownTitle(source)}”? This cannot be undone.</p>
                   <div className={styles.confirmActions}>
                     <button className={styles.danger} type="button" onClick={() => void confirmDelete()}>
                       Delete
@@ -315,7 +320,7 @@ export function SourcesPanel() {
               {openChunksId === source.source_id ? (
                 <div className={styles.chunks}>
                   <div className={styles.chunksHead}>
-                    <h3 className={styles.chunksTitle}>Indexed text · {source.title}</h3>
+                    <h3 className={styles.chunksTitle}>Indexed text · {shownTitle(source)}</h3>
                     <button type="button" className={styles.ghost} onClick={() => setOpenChunksId(null)}>
                       Close
                     </button>
