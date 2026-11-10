@@ -1,0 +1,8 @@
+model,quality_percent,median_answer_seconds,memory_gb,quality_percent_with_fix,notes
+llama3.2:1b,29,0.9,1.7,,"Nykyinen malli. Suomi ei toimi, keksii faktoja"
+gemma3:1b,73,1.4,1.1,,
+qwen3:1.7b,65,1.1,1.8,,
+phi4-mini,71,1.9,3.4,,
+gemma3:4b,75,3.1,2.7,88,"Paras suomi, hidas promptin käsittely"
+qwen3:4b-instruct-2507-q4_K_M,77,2.3,3.3,85,"Paras kokonaisuus, valittu"
+llama3.1:8b,67,5.6,5.2,,"Hidas, ei parempi"
