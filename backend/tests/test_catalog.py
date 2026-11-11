@@ -76,6 +76,11 @@ class TestMatchTitle:
     def test_full_title_still_matches_when_words_are_generic(self):
         assert _match_title("AI Workshop", "AI Workshop")
 
+    def test_hyphenated_title_matches(self):
+        """'AI-workshop' is the same title as 'AI Workshop', not Robotics."""
+        assert _match_title("Mitä tarkoittaa AI-workshop?", "AI Workshop")
+        assert not _match_title("Mitä tarkoittaa AI-workshop?", "Robotics Workshop")
+
 
 class TestStoreCatalogProvider:
     """Test StoreCatalogProvider with real demo data."""
