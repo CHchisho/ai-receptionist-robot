@@ -94,7 +94,7 @@ def _hit_from_row(kind: str, row: dict) -> CatalogHit:
 def _normalize(value: str) -> str:
     """Normalize query/title by lowercasing and removing punctuation."""
     normalized = value.lower()
-    normalized = re.sub(r"[^\w\s\-]", " ", normalized)
+    normalized = re.sub(r"[^\w\s]", " ", normalized)
     return " ".join(normalized.split())
 
 

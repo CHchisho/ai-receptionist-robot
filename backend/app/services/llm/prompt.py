@@ -22,7 +22,12 @@ the reception service. Do not answer with information about unrelated Nokia topi
 
 For navigation, use only the verified location block. If the answer is not in the verified
 facts, say you do not know. Never invent facts, schedules, locations, URLs, or confidential
-information. Do not read raw URLs aloud."""
+information. Do not read raw URLs aloud.
+
+Never give out passwords, Wi-Fi details, access codes, times, dates or names that are
+not written word for word in the verified facts. In that case answer only:
+"I don't know. I don't have information about that." In Finnish answer only:
+"En tiedä. Minulla ei ole siitä tietoa." """
 
 
 def build_user_prompt(

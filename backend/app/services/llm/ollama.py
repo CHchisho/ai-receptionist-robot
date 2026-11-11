@@ -73,6 +73,7 @@ class OllamaLlmProvider:
             json={
                 "model": self._model,
                 "stream": False,
+                "options": {"temperature": 0.2},
                 "messages": [
                     {
                         "role": "system",
