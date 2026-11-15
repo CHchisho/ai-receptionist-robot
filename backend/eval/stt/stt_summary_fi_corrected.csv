@@ -1,0 +1,4 @@
+﻿model,successful_files,corpus_wer_percent,mean_processing_seconds,max_peak_rss_mb
+tiny,4,53.33,0.81,229.36
+base,4,53.33,1.45,326.06
+small,4,40.0,4.56,689.42

@@ -1,0 +1,13 @@
+﻿model,file,language,reference,transcription,wer,processing_seconds,loading_seconds,peak_rss_mb,peak_cpu_percent,error
+tiny,FI1.m4a,fi,"Hei, missä kokoushuone sijaitsee?","Hei, missä kokonushone sijaitse.",50.0,0.9,7.92,212.5,403.2,
+tiny,FI2.m4a,fi,Voitko auttaa minua?,Voitko auttaa minua?,0.0,0.78,2.24,229.36,446.4,
+tiny,FI3.m4a,fi,Missä on lähin vessa?,Misaa on lain vessä.,75.0,0.75,2.19,209.1,440.7,
+tiny,FI4.m4a,fi,Mihin aikaan kokous alkaa?,Meihin aikaan kokous alkaa. Meihin aikaan.,75.0,0.82,2.17,205.11,443.3,
+base,FI1.m4a,fi,"Hei, missä kokoushuone sijaitsee?","Hei, missä koko osua ne sijaitse?",100.0,1.47,2.73,274.72,537.1,
+base,FI2.m4a,fi,Voitko auttaa minua?,Voitko auttaa minua?,0.0,1.49,2.52,305.56,421.6,
+base,FI3.m4a,fi,Missä on lähin vessa?,Missä on lahin vessa?,25.0,1.4,2.53,326.06,833.3,
+base,FI4.m4a,fi,Mihin aikaan kokous alkaa?,Mihin aikaan kokousalkaa? Mihin aii,75.0,1.44,2.42,293.7,504.0,
+small,FI1.m4a,fi,"Hei, missä kokoushuone sijaitsee?","Hei, missä kokons huonessi jaitsee?",75.0,4.7,4.03,664.5,529.2,
+small,FI2.m4a,fi,Voitko auttaa minua?,Voitko auttaa minua?,0.0,4.53,4.01,645.14,565.2,
+small,FI3.m4a,fi,Missä on lähin vessa?,Missä on lähin vesä?,25.0,4.49,4.04,689.42,545.6,
+small,FI4.m4a,fi,Mihin aikaan kokous alkaa?,mihin aikaan kokous alkaa? mihin a-,50.0,4.52,4.05,643.52,520.8,
