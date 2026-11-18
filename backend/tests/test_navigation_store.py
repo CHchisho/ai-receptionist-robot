@@ -105,3 +105,19 @@ def test_navigation_api_crud() -> None:
     deleted = client.delete(f"/api/v1/navigation/locations/{body['id']}")
     assert deleted.status_code == 200
     assert client.delete(f"/api/v1/navigation/locations/{body['id']}").status_code == 404
+def test_navigation_api_rejects_blank_location_name() -> None:
+    """A location name containing only spaces must be rejected."""
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/navigation/locations",
+        json={
+            "name": "   ",
+            "floor": "1st floor",
+            "landmark": "near reception",
+            "directions": "Walk straight ahead.",
+            "aliases": [],
+        },
+    )
+
+    assert response.status_code == 422
