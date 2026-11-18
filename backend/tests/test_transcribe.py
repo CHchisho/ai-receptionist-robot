@@ -11,7 +11,8 @@ def test_transcribe_returns_mock_text() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "text": "transcribed question",
-        "language": "en",
-    }
+    data = response.json()
+    assert data["text"] == "transcribed question"
+    assert data["language"] == "en"
+    assert isinstance(data["stt_ms"], int)
+    assert data["stt_ms"] >= 0

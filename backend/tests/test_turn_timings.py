@@ -56,3 +56,10 @@ def test_tts_duration_can_be_added_after_the_turn() -> None:
 
     turn = store.list_turns("session-3")[0]
     assert turn["tts_ms"] == 3300
+
+
+def test_tts_update_for_unknown_turn_does_not_create_turn() -> None:
+    before = store.list_turns("session-unknown")
+    store.set_turn_tts_ms(-1, 500)
+    after = store.list_turns("session-unknown")
+    assert after == before
