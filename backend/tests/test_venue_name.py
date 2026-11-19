@@ -48,3 +48,8 @@ def test_lowercase_mention_uses_official_casing() -> None:
         expand_official_venue_name("meet us at innovation garage")
         == "meet us at Nokia Espoo Innovation Garage"
     )
+def test_text_without_venue_name_stays_unchanged() -> None:
+    """Text without a venue mention should remain unchanged."""
+    text = "Welcome! The workshop starts at 14:00."
+
+    assert expand_official_venue_name(text) == text

@@ -354,4 +354,23 @@ class TestStoreCatalogProvider:
                 sys.modules["app.services.knowledge"] = original_module
             elif "app.services.knowledge" in sys.modules:
                 del sys.modules["app.services.knowledge"]
+    def test_hidden_demo_is_not_returned(self, monkeypatch):
+        """Hidden demos must not appear in catalog search results."""
+        import app.services.knowledge as knowledge
+
+        mock_store = MagicMock()
+        mock_store.list_demos.return_value = [
+            {
+                "id": 99,
+                "title": "Energy Management System",
+                "description": "Hidden demo",
+                "hidden": True,
+            }
+        ]
+        mock_store.list_events.return_value = []
+
+        monkeypatch.setattr(knowledge, "store", mock_store, raising=False)
+
+        provider = StoreCatalogProvider()
+        assert provider.find("Energy Management System") is None
 

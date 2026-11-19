@@ -32,3 +32,15 @@ def test_delete_feedback():
 
     feedback.delete_feedback_ids([second["id"]])
     assert feedback.list_feedback() == []
+
+
+def test_feedback_rejects_invalid_rating() -> None:
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/feedback",
+        json={"rating": 6, "comment": "Invalid rating"},
+    )
+    assert response.status_code == 422

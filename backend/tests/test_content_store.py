@@ -73,3 +73,19 @@ def test_demo_and_event_can_be_updated() -> None:
         json={"title": "   ", "description": "x", "location": "Hall"},
     )
     assert blank.status_code == 422
+def test_update_nonexistent_event_returns_404() -> None:
+    """Updating an event that does not exist should return 404."""
+    client = TestClient(create_app())
+
+    response = client.put(
+        "/api/v1/content/events/99999",
+        json={
+            "title": "Missing Event",
+            "event_time": "15:00",
+            "room": "Room 202",
+            "description": "This event does not exist.",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Event not found"

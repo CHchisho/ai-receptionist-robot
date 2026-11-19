@@ -32,3 +32,10 @@ def test_reception_alias_does_not_match_receptionist() -> None:
 
     assert provider.find("What is receptionist robot") is None
     assert provider.find("Where is the reception?").name == "Main entrance"
+
+
+def test_navigation_normalizes_case_and_whitespace() -> None:
+    provider = MockNavigationProvider()
+    result = provider.find("  WHERE   IS THE KITCHEN?  ")
+    assert result is not None
+    assert result.name == "Kitchen"
