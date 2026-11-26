@@ -75,6 +75,7 @@ export function useConversation() {
     null,
   );
   const [audioProgress, setAudioProgress] = useState(0);
+  const [speechBuffering, setSpeechBuffering] = useState(false);
 
   const playbackRef = useRef<AudioPlayback | null>(null);
   const welcomeStartedRef = useRef(false);
@@ -302,7 +303,24 @@ export function useConversation() {
         if (!upcoming) {
           break;
         }
-        const audio = await upcoming;
+        const pendingClip = upcoming;
+        let clipReady = false;
+        pendingClip.then(
+          () => {
+            clipReady = true;
+          },
+          () => {
+            clipReady = true;
+          },
+        );
+        if (index > 0) {
+          await Promise.resolve();
+          if (!clipReady && epoch === chatEpochRef.current) {
+            setSpeechBuffering(true);
+          }
+        }
+        const audio = await pendingClip;
+        setSpeechBuffering(false);
         upcoming = null;
         if (epoch !== chatEpochRef.current) {
           return;
@@ -378,6 +396,7 @@ export function useConversation() {
       if (playbackRef.current === null) {
         setPlayingMessageId((current) => (current === assistantMessageId ? null : current));
         setAudioProgress(0);
+        setSpeechBuffering(false);
       }
       setStatus("error");
       setError(
@@ -469,6 +488,7 @@ export function useConversation() {
     }
     setPlayingMessageId((current) => (current === messageId ? null : current));
     setAudioProgress(0);
+    setSpeechBuffering(false);
     setStatus((current) =>
       current === "speaking" || current === "processing" ? "idle" : current,
     );
@@ -479,6 +499,7 @@ export function useConversation() {
     playbackRef.current = null;
     setPlayingMessageId(null);
     setAudioProgress(0);
+    setSpeechBuffering(false);
     setStatus("idle");
   }
 
@@ -565,6 +586,7 @@ export function useConversation() {
     welcomeSpoken,
     playingMessageId,
     audioProgress,
+    speechBuffering,
     toggleMessagePlayback,
   };
 }

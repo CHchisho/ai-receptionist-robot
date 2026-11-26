@@ -29,6 +29,7 @@ export function ChatPanel({
     ask,
     playingMessageId,
     audioProgress,
+    speechBuffering,
     toggleMessagePlayback,
   } = conversation;
 
@@ -125,6 +126,7 @@ export function ChatPanel({
           messages={messages}
           activeMessageId={playingMessageId}
           activeProgress={audioProgress}
+          speechBuffering={speechBuffering}
           onTogglePlayback={toggleMessagePlayback}
         />
       </div>

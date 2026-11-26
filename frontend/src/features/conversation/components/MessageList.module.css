@@ -148,7 +148,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .char,
-  .ttsLoader {
+  .ttsLoader,
+  .progressSheen::after {
     animation: none;
   }
 }
@@ -168,9 +169,50 @@
 }
 
 .progressBar {
+  position: relative;
   height: 100%;
+  overflow: hidden;
   border-radius: 999px;
   background: var(--color-accent);
+}
+
+.progressSheen {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.progressSheen::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  bottom: -50%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, white 78%, var(--color-accent)),
+    transparent
+  );
+  filter: blur(3px);
+  animation: progressSheen 1.15s linear infinite;
+}
+
+.progressSheenOn {
+  opacity: 1;
+}
+
+@keyframes progressSheen {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
 }
 
 .routeCard {
