@@ -29,6 +29,7 @@ export function ChatPanel({
     ask,
     playingMessageId,
     audioProgress,
+    speechBuffering,
     toggleMessagePlayback,
   } = conversation;
 
@@ -106,7 +107,7 @@ export function ChatPanel({
   }
 
   const recordHint = isListening
-    ? "Listening"
+    ? "Listening. Pause to send"
     : recordingState === "processing" || status === "processing"
       ? "Thinking…"
       : "Tap to speak";
@@ -125,14 +126,14 @@ export function ChatPanel({
           messages={messages}
           activeMessageId={playingMessageId}
           activeProgress={audioProgress}
+          speechBuffering={speechBuffering}
           onTogglePlayback={toggleMessagePlayback}
         />
       </div>
 
       <div
-        className={`${styles.composer} ${
-          hasReply ? styles.composerDocked : styles.composerCentered
-        }`}
+        className={`${styles.composer} ${hasReply ? styles.composerDocked : styles.composerCentered
+          }`}
       >
         {error ? <p className={styles.error}>{error}</p> : null}
 

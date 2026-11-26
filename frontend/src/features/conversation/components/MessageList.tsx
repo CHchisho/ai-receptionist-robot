@@ -11,6 +11,7 @@ type Props = {
   messages: ChatMessage[];
   activeMessageId: string | null;
   activeProgress: number;
+  speechBuffering: boolean;
   onTogglePlayback: (message: ChatMessage) => void;
 };
 
@@ -18,6 +19,7 @@ export function MessageList({
   messages,
   activeMessageId,
   activeProgress,
+  speechBuffering,
   onTogglePlayback,
 }: Props) {
   return (
@@ -137,7 +139,16 @@ export function MessageList({
 
             {canPlay && isPlaying ? (
               <div className={styles.progressTrack}>
-                <div className={styles.progressBar} style={{ width: `${activeProgress}%` }} />
+                <div className={styles.progressBar} style={{ width: `${activeProgress}%` }}>
+                  <span
+                    className={
+                      isPlaying && speechBuffering
+                        ? `${styles.progressSheen} ${styles.progressSheenOn}`
+                        : styles.progressSheen
+                    }
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
             ) : null}
           </li>

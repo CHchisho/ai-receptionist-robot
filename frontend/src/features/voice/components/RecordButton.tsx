@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { IconMicrophone, IconStop } from "@/shared/icons";
 import { useMicrophone } from "@/features/voice/hooks/useMicrophone";
 import { transcribeAudio } from "@/features/voice/services/sttClient";
@@ -23,32 +23,21 @@ export function RecordButton({
   const { isSupported, start, stop } = useMicrophone();
   const [state, setState] = useState<RecordingState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const stateRef = useRef<RecordingState>("idle");
+  const finishingRef = useRef(false);
 
   function updateState(nextState: RecordingState) {
+    stateRef.current = nextState;
     setState(nextState);
     onStateChange?.(nextState);
   }
 
-  async function handleClick() {
-    if (disabled || state === "processing") {
+  async function finishRecording() {
+    if (finishingRef.current || stateRef.current !== "recording") {
       return;
     }
 
-    unlockAudio();
-
-    if (state === "idle") {
-      setError(null);
-
-      try {
-        await start();
-        updateState("recording");
-      } catch {
-        setError("Could not access the microphone.");
-      }
-
-      return;
-    }
-
+    finishingRef.current = true;
     updateState("processing");
 
     try {
@@ -65,8 +54,34 @@ export function RecordButton({
     } catch {
       setError("Could not transcribe the recording. Please try again.");
     } finally {
+      finishingRef.current = false;
       updateState("idle");
     }
+  }
+
+  async function handleClick() {
+    if (disabled || state === "processing") {
+      return;
+    }
+
+    unlockAudio();
+
+    if (state === "idle") {
+      setError(null);
+
+      try {
+        await start(() => {
+          void finishRecording();
+        });
+        updateState("recording");
+      } catch {
+        setError("Could not access the microphone.");
+      }
+
+      return;
+    }
+
+    void finishRecording();
   }
 
   if (!isSupported) {
