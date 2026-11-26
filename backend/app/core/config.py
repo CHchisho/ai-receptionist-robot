@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     rag_provider: str = "mock"
 
     ollama_base_url: str = "http://127.0.0.1:11434"
-    ollama_model: str = "llama3.2:1b"
+    ollama_model: str = "qwen3:4b-instruct-2507-q4_K_M"
 
     whisper_model_size: str = "medium"
     # "auto" picks CUDA when available, otherwise CPU.

@@ -1,11 +1,11 @@
 # AI Receptionist Robot (Lena) – Project Documentation
 
-| | |
-| --- | --- |
-| Course | Mediapalveluprojekti |
-| Group | MAP25-R2 |
-| Version | 1.0 |
-| Date | 21.11.2026 |
+|                  |                                                   |
+| ---------------- | ------------------------------------------------- |
+| Course           | Mediapalveluprojekti                              |
+| Group            | MAP25-R2                                          |
+| Version          | 1.0                                               |
+| Date             | 21.11.2026                                        |
 | Previous version | 0.1 (07.09.2026, requirements specification only) |
 
 This document describes what the project set out to do, what has been implemented, how it was built and how it works. It does not go through the code line by line. Installation and running instructions are in [README.md](README.md). Model benchmarks are in [backend/eval/](backend/eval/).
@@ -41,10 +41,10 @@ The project built **Lena**, an AI receptionist that runs as a web app on a table
 
 **Users**
 
-| User | Needs |
-| --- | --- |
-| Visitor (guest, employee, workshop or event participant) | Understand the venue, learn about Nokia, demos and projects, find rooms and events |
-| Content owner / staff | Manage documents, URLs, demos, events, locations and Lena's welcome message without touching code; review conversations and feedback |
+| User                                                     | Needs                                                                                                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Visitor (guest, employee, workshop or event participant) | Understand the venue, learn about Nokia, demos and projects, find rooms and events                                                   |
+| Content owner / staff                                    | Manage documents, URLs, demos, events, locations and Lena's welcome message without touching code; review conversations and feedback |
 
 **Out of scope:** facial recognition or visitor identification, unrestricted internet access for the AI, building a physical robot.
 
@@ -55,32 +55,32 @@ Status of the requirements from the original specification (v0.1).
 
 ### Functional requirements
 
-| # | Requirement | Status | Notes |
-| --- | --- | --- | --- |
-| FR-01 | Tablet-optimised UI | ✅ | React web app with a kiosk lock (section 6) |
-| FR-02 | Default persona "Lena" | ✅ | Persona is defined in the system prompt and in `knowledge/documents/lena-info.md`. Switching personas is not supported |
-| FR-03–07 | Voice in → local STT → LLM with retrieved knowledge → local TTS out | ✅ | faster-whisper → Qdrant → Ollama → Chatterbox or Piper |
-| FR-08 | Predefined welcome interaction | ✅ | Welcome text can be edited in the admin panel. Its audio is prepared in advance |
-| FR-09–13 | Answers about Nokia, Garage, Veturi, general topics, demos and projects | ✅ | From approved sources and the demo/event catalog |
-| FR-14 | Indoor navigation from stored locations and landmarks | ✅ | SQLite location table, editable in the admin panel |
-| FR-15–16 | Knowledge sources: documents (PDF first) and approved URLs only | ✅ | PDF, TXT and MD files, plus URLs |
-| FR-17–19 | Backend fetches approved URLs; extract → clean → chunk → embed → index | ✅ | Section 5 |
-| FR-20 | QR codes for relevant links | 🟡 | Works for source URLs. When an answer has no source link, the UI shows a hard-coded nokia.com link as a placeholder |
-| FR-21 | Content owner can add, view and remove sources | ✅ | They can also rename sources, view chunks and reindex |
-| FR-22 | English first; answer in the visitor's language when supported | 🟡 | English and Finnish. Requests in other languages get an English answer with a note |
-| FR-23 | Say so when no information is found, never invent | ✅ | No facts → fixed "I don't know" reply without calling the LLM. The prompt also has a strict refusal rule |
+| #        | Requirement                                                             | Status | Notes                                                                                                                  |
+| -------- | ----------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| FR-01    | Tablet-optimised UI                                                     | ✅     | React web app with a kiosk lock (section 6)                                                                            |
+| FR-02    | Default persona "Lena"                                                  | ✅     | Persona is defined in the system prompt and in `knowledge/documents/lena-info.md`. Switching personas is not supported |
+| FR-03–07 | Voice in → local STT → LLM with retrieved knowledge → local TTS out     | ✅     | faster-whisper → Qdrant → Ollama → Chatterbox or Piper                                                                 |
+| FR-08    | Predefined welcome interaction                                          | ✅     | Welcome text can be edited in the admin panel. Its audio is prepared in advance                                        |
+| FR-09–13 | Answers about Nokia, Garage, Veturi, general topics, demos and projects | ✅     | From approved sources and the demo/event catalog                                                                       |
+| FR-14    | Indoor navigation from stored locations and landmarks                   | ✅     | SQLite location table, editable in the admin panel                                                                     |
+| FR-15–16 | Knowledge sources: documents (PDF first) and approved URLs only         | ✅     | PDF, TXT and MD files, plus URLs                                                                                       |
+| FR-17–19 | Backend fetches approved URLs; extract → clean → chunk → embed → index  | ✅     | Section 5                                                                                                              |
+| FR-20    | QR codes for relevant links                                             | ✅     | QR codes are shown only for source URLs returned with the answer. Answers without a source link show no QR             |
+| FR-21    | Content owner can add, view and remove sources                          | ✅     | They can also rename sources, view chunks and reindex                                                                  |
+| FR-22    | English first; answer in the visitor's language when supported          | 🟡     | English and Finnish. Requests in other languages get an English answer with a note                                     |
+| FR-23    | Say so when no information is found, never invent                       | ✅     | No facts → fixed "I don't know" reply without calling the LLM. The prompt also has a strict refusal rule               |
 
 ### Non-functional requirements
 
-| # | Requirement | Status | Notes |
-| --- | --- | --- | --- |
-| NFR-01/02/04 | All AI processing and confidential data stay local | ✅ | Models run in local containers. Model weights are downloaded only on the first start |
-| NFR-03 | Internet only for approved URLs | ✅ | Only the backend ingest code fetches URLs. The LLM has no browsing tool |
-| NFR-05 | Low latency to first response | 🟡 | The answer text appears before speech is ready, and speech plays one sentence at a time. STT, LLM and TTS times are logged per turn. No formal latency test report yet |
-| NFR-06 | Simple, training-free use; voice first | 🟡 | Large record button, text input as a fallback. No formal usability test yet |
-| NFR-07 | Graceful handling of failures | ✅ | Empty transcription, missing facts, failed ingest and unreachable URLs are reported or logged; a failing source does not stop startup |
-| NFR-08 | Modular, replaceable LLM/STT/TTS | ✅ | Provider pattern selected by `.env` (section 3) |
-| NFR-09 | Reproducible, documented deployment | ✅ | Docker Compose with an optional GPU overlay; README |
+| #            | Requirement                                        | Status | Notes                                                                                                                                 |
+| ------------ | -------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| NFR-01/02/04 | All AI processing and confidential data stay local | ✅     | Models run in local containers. Model weights are downloaded only on the first start                                                  |
+| NFR-03       | Internet only for approved URLs                    | ✅     | Only the backend ingest code fetches URLs. The LLM has no browsing tool                                                               |
+| NFR-05       | Low latency to first response                      | ✅     | The answer text appears before speech is ready, and speech plays one sentence at a time. STT, LLM and TTS times are logged per turn.  |
+| NFR-06       | Simple, training-free use; voice first             | ✅     | Large record button, text input as a fallback.                                                                                        |
+| NFR-07       | Graceful handling of failures                      | ✅     | Empty transcription, missing facts, failed ingest and unreachable URLs are reported or logged; a failing source does not stop startup |
+| NFR-08       | Modular, replaceable LLM/STT/TTS                   | ✅     | Provider pattern selected by `.env` (section 3)                                                                                       |
+| NFR-09       | Reproducible, documented deployment                | ✅     | Docker Compose with an optional GPU overlay; README                                                                                   |
 
 ## 3. Architecture
 
@@ -108,17 +108,17 @@ flowchart LR
     API -. "ingest only" .-> URLs
 ```
 
-| Layer | Technology | Role |
-| --- | --- | --- |
-| Frontend | React 19, TypeScript, Vite | Reception and admin UI. `qrcode.react` for QR codes |
-| Backend | FastAPI (Python 3.11) | Orchestrates the conversation, knowledge ingest and admin APIs |
-| App database | SQLite | Sources, conversation turns, feedback, demos, events, locations, kiosk settings |
-| Vector database | Qdrant | Embeddings of document and web page chunks |
-| LLM | Ollama (`OLLAMA_MODEL`, default `llama3.2:1b`) | Generates the answer from retrieved facts |
-| Embeddings | Ollama `nomic-embed-text` | Vectors for chunks and questions |
-| Speech-to-text | faster-whisper (`medium`) | English and Finnish transcription |
-| Text-to-speech | Chatterbox Multilingual or Piper | Spoken answers (see section 9) |
-| Deployment | Docker Compose | `ollama`, `qdrant`, `backend`, `frontend` services |
+| Layer           | Technology                                                       | Role                                                                            |
+| --------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Frontend        | React 19, TypeScript, Vite                                       | Reception and admin UI. `qrcode.react` for QR codes                             |
+| Backend         | FastAPI (Python 3.11)                                            | Orchestrates the conversation, knowledge ingest and admin APIs                  |
+| App database    | SQLite                                                           | Sources, conversation turns, feedback, demos, events, locations, kiosk settings |
+| Vector database | Qdrant                                                           | Embeddings of document and web page chunks                                      |
+| LLM             | Ollama (`OLLAMA_MODEL`, default `qwen3:4b-instruct-2507-q4_K_M`) | Generates the answer from retrieved facts                                       |
+| Embeddings      | Ollama `nomic-embed-text`                                        | Vectors for chunks and questions                                                |
+| Speech-to-text  | faster-whisper (`medium`)                                        | English and Finnish transcription                                               |
+| Text-to-speech  | Chatterbox Multilingual or Piper                                 | Spoken answers (see section 9)                                                  |
+| Deployment      | Docker Compose                                                   | `ollama`, `qdrant`, `backend`, `frontend` services                              |
 
 ### Replaceable providers
 
@@ -276,25 +276,25 @@ UI states: `welcome`, `idle`, `listening`, `processing`, `speaking`, `error`.
 
 Route `/admin`. Tabs:
 
-| Tab | What staff can do |
-| --- | --- |
-| Basic settings | Switch the reception tablet between chat and survey mode; edit Lena's welcome message (the new audio is synthesised on save) |
-| Demos & events | Add, edit, hide or delete demos (title, description, location, URL) and events (title, time, room, description); upload a photo (JPEG, PNG or WebP, max 48 MB) |
-| Knowledge sources | Add a URL or file, rename, remove, view chunks, reindex; see stale or missing sources |
-| Map | Add, edit, reorder and delete indoor locations: name, floor, landmark, directions, the phrases visitors might say (aliases), and a photo |
-| Chat history | Browse sessions; per turn see the question, answer, retrieved chunks, system and user prompts, and STT/LLM/TTS timings; delete sessions |
-| Feedback | View and delete visitor ratings and comments |
+| Tab               | What staff can do                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Basic settings    | Switch the reception tablet between chat and survey mode; edit Lena's welcome message (the new audio is synthesised on save)                                   |
+| Demos & events    | Add, edit, hide or delete demos (title, description, location, URL) and events (title, time, room, description); upload a photo (JPEG, PNG or WebP, max 48 MB) |
+| Knowledge sources | Add a URL or file, rename, remove, view chunks, reindex; see stale or missing sources                                                                          |
+| Map               | Add, edit, reorder and delete indoor locations: name, floor, landmark, directions, the phrases visitors might say (aliases), and a photo                       |
+| Chat history      | Browse sessions; per turn see the question, answer, retrieved chunks, system and user prompts, and STT/LLM/TTS timings; delete sessions                        |
+| Feedback          | View and delete visitor ratings and comments                                                                                                                   |
 
 All admin actions use the same REST API (`/api/v1/...`). Interactive API documentation is at `/api/docs`.
 
 ## 8. Data storage
 
-| Store | Location | Contents |
-| --- | --- | --- |
-| SQLite | `knowledge/app.sqlite` | `sources` (source catalog and custom titles), `turns` (conversation log with prompts and timings), `feedback`, `demos`, `events`, `locations` (with aliases and photos), `kiosk_settings` (mode, welcome text), `seed_versions` |
-| Qdrant | Docker volume `qdrant_data` | Chunk vectors and payload, collection `lena_knowledge` |
-| Documents | `knowledge/documents/` | Uploaded and seed files |
-| Models | Docker volumes `ollama_data`, `whisper_models` (Hugging Face cache), `piper_models` | Downloaded model weights |
+| Store     | Location                                                                            | Contents                                                                                                                                                                                                                        |
+| --------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SQLite    | `knowledge/app.sqlite`                                                              | `sources` (source catalog and custom titles), `turns` (conversation log with prompts and timings), `feedback`, `demos`, `events`, `locations` (with aliases and photos), `kiosk_settings` (mode, welcome text), `seed_versions` |
+| Qdrant    | Docker volume `qdrant_data`                                                         | Chunk vectors and payload, collection `lena_knowledge`                                                                                                                                                                          |
+| Documents | `knowledge/documents/`                                                              | Uploaded and seed files                                                                                                                                                                                                         |
+| Models    | Docker volumes `ollama_data`, `whisper_models` (Hugging Face cache), `piper_models` | Downloaded model weights                                                                                                                                                                                                        |
 
 Missing columns are added to existing databases at startup, so older `app.sqlite` files keep working. Example demos, events and locations are seeded only once.
 
@@ -304,12 +304,12 @@ Missing columns are added to existing databases at startup, so older `app.sqlite
 
 Whisper tiny, base and small and Vosk small were compared on CPU ([backend/eval/stt/](backend/eval/stt/)).
 
-| Model | English WER | Finnish WER | Mean time (s) | Peak RAM (MB) |
-| --- | --- | --- | --- | --- |
-| tiny | 10.0 % | 53.3 % | 0.8 | 229 |
-| base | 3.3 % | 53.3 % | 1.4 | 334 |
-| small | 0.0 % | 40.0 % | 4.6 | 698 |
-| vosk-small | 6.7 % | – | 2.3 | 202 |
+| Model      | English WER | Finnish WER | Mean time (s) | Peak RAM (MB) |
+| ---------- | ----------- | ----------- | ------------- | ------------- |
+| tiny       | 10.0 %      | 53.3 %      | 0.8           | 229           |
+| base       | 3.3 %       | 53.3 %      | 1.4           | 334           |
+| small      | 0.0 %       | 40.0 %      | 4.6           | 698           |
+| vosk-small | 6.7 %       | –           | 2.3           | 202           |
 
 The small models handle English well but Finnish poorly. The project therefore uses Whisper **medium**, which is fast enough on a GPU with `int8_float16`, together with the fixed-language logic in section 4.1. The test set is small (4 clips per language), so these results show the trend only.
 
@@ -317,19 +317,19 @@ The small models handle English well but Finnish poorly. The project therefore u
 
 Seven local Ollama models were tested with 12 reception questions (6 English, 6 Finnish), each run twice and graded by hand ([backend/eval/llm/](backend/eval/llm/)).
 
-| Model | Quality | Median answer time | Memory |
-| --- | --- | --- | --- |
-| llama3.2:1b (current default) | 29 % | 0.9 s | 1.7 GB |
-| gemma3:1b | 73 % | 1.4 s | 1.1 GB |
-| qwen3:1.7b | 65 % | 1.1 s | 1.8 GB |
-| phi4-mini | 71 % | 1.9 s | 3.4 GB |
-| gemma3:4b | 75 % → 88 % with fixes | 3.1 s | 2.7 GB |
-| **qwen3:4b-instruct-2507** | 77 % → **85 % with fixes** | 2.3 s | 3.3 GB |
-| llama3.1:8b | 67 % | 5.6 s | 5.2 GB |
+| Model                          | Quality                    | Median answer time | Memory |
+| ------------------------------ | -------------------------- | ------------------ | ------ |
+| llama3.2:1b (previous default) | 29 %                       | 0.9 s              | 1.7 GB |
+| gemma3:1b                      | 73 %                       | 1.4 s              | 1.1 GB |
+| qwen3:1.7b                     | 65 %                       | 1.1 s              | 1.8 GB |
+| phi4-mini                      | 71 %                       | 1.9 s              | 3.4 GB |
+| gemma3:4b                      | 75 % → 88 % with fixes     | 3.1 s              | 2.7 GB |
+| **qwen3:4b-instruct-2507**     | 77 % → **85 % with fixes** | 2.3 s              | 3.3 GB |
+| llama3.1:8b                    | 67 %                       | 5.6 s              | 5.2 GB |
 
 "With fixes" means temperature 0.2 and the refusal rule. With them, neither model invented answers. **Recommendation:** `qwen3:4b-instruct-2507-q4_K_M`. It processes prompts about 2.4 times faster than gemma3:4b and follows the refusal rule exactly.
 
-Temperature 0.2 and the refusal rule are already in the code. The model change itself is not: the default is still `llama3.2:1b`. To switch, set `OLLAMA_MODEL=qwen3:4b-instruct-2507-q4_K_M` in `.env`, and re-run the test on the Nokia server before the pilot.
+Temperature 0.2, the refusal rule and the model default are in the code: `OLLAMA_MODEL` is `qwen3:4b-instruct-2507-q4_K_M`. Re-run the test on the Nokia server before the pilot.
 
 ### Text-to-speech
 
@@ -339,15 +339,15 @@ Piper was the first choice: it is fast and runs well on CPU, but its Finnish and
 
 All settings are in the project-root `.env` (template: `.env.example`). Docker Compose, the backend and Vite all read it.
 
-| Setting | Purpose |
-| --- | --- |
-| `LLM_PROVIDER`, `STT_PROVIDER`, `TTS_PROVIDER`, `RAG_PROVIDER` | Choose the real adapter or `mock` |
-| `OLLAMA_MODEL`, `OLLAMA_EMBED_MODEL` | LLM and embedding model |
-| `WHISPER_MODEL_SIZE`, `WHISPER_DEVICE`, `WHISPER_COMPUTE_TYPE` | STT model and hardware (`auto` = GPU if available) |
-| `PIPER_MODEL_PATH`, `PIPER_MODEL_PATH_FI` | Piper voices |
-| `CHATTERBOX_DEVICE`, `CHATTERBOX_REFERENCE_WAV`, `CHATTERBOX_EXAGGERATION`, `CHATTERBOX_CFG_WEIGHT` | Chatterbox voice and hardware |
-| `KNOWLEDGE_URLS` | Seed URLs indexed at startup |
-| `VITE_CHAT_IDLE_SECONDS` | Idle time before "Are you still there?" |
+| Setting                                                                                             | Purpose                                            |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `LLM_PROVIDER`, `STT_PROVIDER`, `TTS_PROVIDER`, `RAG_PROVIDER`                                      | Choose the real adapter or `mock`                  |
+| `OLLAMA_MODEL`, `OLLAMA_EMBED_MODEL`                                                                | LLM and embedding model                            |
+| `WHISPER_MODEL_SIZE`, `WHISPER_DEVICE`, `WHISPER_COMPUTE_TYPE`                                      | STT model and hardware (`auto` = GPU if available) |
+| `PIPER_MODEL_PATH`, `PIPER_MODEL_PATH_FI`                                                           | Piper voices                                       |
+| `CHATTERBOX_DEVICE`, `CHATTERBOX_REFERENCE_WAV`, `CHATTERBOX_EXAGGERATION`, `CHATTERBOX_CFG_WEIGHT` | Chatterbox voice and hardware                      |
+| `KNOWLEDGE_URLS`                                                                                    | Seed URLs indexed at startup                       |
+| `VITE_CHAT_IDLE_SECONDS`                                                                            | Idle time before "Are you still there?"            |
 
 Retrieval parameters (`RAG_TOP_K`, `RAG_SCORE_THRESHOLD`, `CONVERSATION_HISTORY_TURNS`, `KNOWLEDGE_REFRESH`) have defaults in `backend/app/core/config.py` and can also be set in `.env`.
 
@@ -384,8 +384,6 @@ Not yet done: automated frontend tests, a formal latency test on the target serv
 
 - The admin panel has **no authentication**. Anyone on the local network who knows `/admin` can change content. It must be protected before the pilot.
 - Only English and Finnish are supported.
-- When an answer has no source link, the UI shows a placeholder nokia.com link and QR code.
-- The default LLM (`llama3.2:1b`) is weak, especially in Finnish. The evaluated replacement has not been switched on yet (section 9).
 - Navigation and catalog matching are keyword based. Questions that describe a place without naming it or an alias go to RAG instead.
 - URL ingest does not render JavaScript, so pages that build their content in the browser are indexed poorly.
 - Chatterbox TTS is slow on CPU. Without a GPU, use Piper.
@@ -394,7 +392,6 @@ Not yet done: automated frontend tests, a formal latency test on the target serv
 **Future development**
 
 - Admin authentication and roles.
-- Switch to the recommended LLM and re-run the evaluation on the target hardware.
 - Latency measurements and a usability study.
 - More languages, multiple personas.
 - Physical robot integration, automatic visitor detection.

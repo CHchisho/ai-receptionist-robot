@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { askQuestion } from "@/features/conversation/api";
-import type { ChatLink, ChatMessage } from "@/features/conversation/types";
+import type { ChatMessage } from "@/features/conversation/types";
 import { splitSentences } from "@/features/voice/splitSentences";
 import {
   createAudioPlayback,
@@ -269,16 +269,6 @@ export function useConversation() {
 
       setSessionId(response.session_id);
 
-      const temporaryLinks: ChatLink[] =
-        response.links.length > 0
-          ? response.links
-          : [
-            {
-              url: "https://www.nokia.com/",
-              label: "Nokia website",
-            },
-          ];
-
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantMessageId
@@ -288,7 +278,7 @@ export function useConversation() {
                 pending: false,
                 reveal: true,
                 ttsPending: true,
-                links: temporaryLinks,
+                links: response.links,
                 route: response.route,
                 card: response.card,
               }
