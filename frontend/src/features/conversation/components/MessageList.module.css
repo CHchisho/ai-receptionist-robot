@@ -148,8 +148,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .char,
-  .ttsLoader,
-  .progressSheen::after {
+  .ttsLoader {
     animation: none;
   }
 }
@@ -178,40 +177,35 @@
 
 .progressSheen {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.45s ease;
-}
-
-.progressSheen::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  bottom: -50%;
-  left: 0;
-  width: 38%;
   background: linear-gradient(
     90deg,
-    transparent,
-    color-mix(in srgb, white 78%, var(--color-accent)),
-    transparent
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0)
   );
-  filter: blur(3px);
-  animation: progressSheen 1.15s linear infinite;
+  transform: translate3d(-130%, 0, 0);
+  transition: opacity 0.45s ease;
+  will-change: transform;
 }
 
 .progressSheenOn {
   opacity: 1;
+  animation: progressSheen 1.15s linear infinite;
 }
 
 @keyframes progressSheen {
   from {
-    transform: translateX(-120%);
+    transform: translate3d(-130%, 0, 0);
   }
 
   to {
-    transform: translateX(320%);
+    transform: translate3d(280%, 0, 0);
   }
 }
 
